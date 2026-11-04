@@ -6,7 +6,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import Document, DocumentPage, Workspace
+from app.chunking.text_chunker import TextChunker
+from app.models import Document, DocumentPage, DocumentChunk, Workspace
 from app.services.document_storage import (
     MAX_FILE_SIZE,
     UPLOAD_DIR,
@@ -127,16 +128,23 @@ def process_document(
         raise HTTPException(404, "Stored PDF file not found.")
 
     try:
-        # Extract text page by page.
+        # 1. Extract text page by page.
         result = extract_pdf_text(file_path)
 
-        # Delete previously extracted pages before inserting new ones.
+        # 2. Remove old pages and chunks.
         db.execute(
             delete(DocumentPage).where(
                 DocumentPage.document_id == document.id
             )
         )
 
+        db.execute(
+            delete(DocumentChunk).where(
+                DocumentChunk.document_id == document.id
+            )
+        )
+
+        # 3. Store extracted pages.
         for page in result["pages"]:
             db.add(
                 DocumentPage(
@@ -147,14 +155,36 @@ def process_document(
                 )
             )
 
+        # 4. Generate token-aware chunks.
+        chunker = TextChunker(
+            chunk_size=500,
+            chunk_overlap=75,
+        )
+
+        chunks = chunker.chunk_pages(result["pages"])
+
+        # 5. Store chunks in PostgreSQL.
+        for chunk in chunks:
+            db.add(
+                DocumentChunk(
+                    document_id=document.id,
+                    chunk_index=chunk.chunk_index,
+                    text=chunk.text,
+                    token_count=chunk.token_count,
+                    page_start=chunk.page_start,
+                    page_end=chunk.page_end,
+                )
+            )
+
+        # 6. Update document status.
         document.extraction_error = None
 
-        # Scanned PDFs will need OCR.
         if result["total_characters"] == 0:
             document.status = "needs_ocr"
         else:
             document.status = "processed"
 
+        # 7. Commit pages, chunks, and status together.
         db.commit()
 
         return {
@@ -163,7 +193,8 @@ def process_document(
             "status": document.status,
             "page_count": result["page_count"],
             "total_characters": result["total_characters"],
-            "message": "PDF processing completed.",
+            "chunk_count": len(chunks),
+            "message": "PDF extraction and chunking completed.",
         }
 
     except PDFExtractionError as exc:
