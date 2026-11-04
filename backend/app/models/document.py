@@ -23,3 +23,7 @@ class Document(Base):
     )
 
     workspace: Mapped["Workspace"] = relationship(back_populates="documents")
+    pages: Mapped[list["DocumentPage"]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )

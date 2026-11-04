@@ -1,16 +1,22 @@
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import Document, Workspace
+from app.models import Document, DocumentPage, Workspace
 from app.services.document_storage import (
     MAX_FILE_SIZE,
+    UPLOAD_DIR,
     calculate_sha256,
     save_pdf,
     delete_pdf,
+)
+from app.services.pdf_extractor import (
+    extract_pdf_text,
+    PDFExtractionError,
 )
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -98,3 +104,81 @@ async def upload_document(
 
     finally:
         await file.close()
+
+
+@router.post("/{document_id}/process")
+def process_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    document = db.get(Document, document_id)
+
+    if document is None:
+        raise HTTPException(404, "Document not found.")
+
+    # Resolve and validate the stored file path.
+    upload_root = UPLOAD_DIR.resolve()
+    file_path = (upload_root / document.storage_key).resolve()
+
+    if not file_path.is_relative_to(upload_root):
+        raise HTTPException(400, "Invalid document storage path.")
+
+    if not file_path.is_file():
+        raise HTTPException(404, "Stored PDF file not found.")
+
+    try:
+        # Extract text page by page.
+        result = extract_pdf_text(file_path)
+
+        # Delete previously extracted pages before inserting new ones.
+        db.execute(
+            delete(DocumentPage).where(
+                DocumentPage.document_id == document.id
+            )
+        )
+
+        for page in result["pages"]:
+            db.add(
+                DocumentPage(
+                    document_id=document.id,
+                    page_number=page["page_number"],
+                    text=page["text"],
+                    char_count=len(page["text"]),
+                )
+            )
+
+        document.extraction_error = None
+
+        # Scanned PDFs will need OCR.
+        if result["total_characters"] == 0:
+            document.status = "needs_ocr"
+        else:
+            document.status = "processed"
+
+        db.commit()
+
+        return {
+            "document_id": document.id,
+            "filename": document.filename,
+            "status": document.status,
+            "page_count": result["page_count"],
+            "total_characters": result["total_characters"],
+            "message": "PDF processing completed.",
+        }
+
+    except PDFExtractionError as exc:
+        db.rollback()
+
+        document = db.get(Document, document_id)
+        document.status = "failed"
+        document.extraction_error = str(exc)
+        db.commit()
+
+        raise HTTPException(
+            status_code=422,
+            detail=f"PDF extraction failed: {exc}",
+        )
+
+    except Exception:
+        db.rollback()
+        raise
