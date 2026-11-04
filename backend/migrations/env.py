@@ -5,7 +5,14 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.db.base import Base
-from app.models import User, Workspace, Document, DocumentPage, ResearchRun
+from app.models import (
+    User,
+    Workspace,
+    Document,
+    DocumentPage,
+    DocumentChunk,
+    ResearchRun,
+)
 
 config = context.config
 
