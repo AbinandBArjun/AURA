@@ -5,9 +5,9 @@ services:
     environment:
       POSTGRES_DB: aura
       POSTGRES_USER: aura
-      POSTGRES_PASSWORD: aura_dev_password
+      POSTGRES_PASSWORD: abinandb7
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - aura_postgres_data:/var/lib/postgresql/data
     healthcheck:

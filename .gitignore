@@ -25,3 +25,7 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Storage / Uploads
+backend/app/storage/uploads/*
+!backend/app/storage/uploads/.gitkeep
