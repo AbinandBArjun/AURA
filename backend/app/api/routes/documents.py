@@ -8,6 +8,10 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.chunking.text_chunker import TextChunker
 from app.models import Document, DocumentPage, DocumentChunk, Workspace
+from app.services.document_indexer import (
+    DocumentIndexer,
+    DocumentIndexingError,
+)
 from app.services.document_storage import (
     MAX_FILE_SIZE,
     UPLOAD_DIR,
@@ -176,16 +180,60 @@ def process_document(
                 )
             )
 
-        # 6. Update document status.
+        # 6. Update extraction status.
         document.extraction_error = None
 
         if result["total_characters"] == 0:
             document.status = "needs_ocr"
-        else:
-            document.status = "processed"
+            db.commit()
 
-        # 7. Commit pages, chunks, and status together.
+            return {
+                "document_id": document.id,
+                "filename": document.filename,
+                "status": document.status,
+                "page_count": result["page_count"],
+                "total_characters": result["total_characters"],
+                "chunk_count": len(chunks),
+                "indexed_count": 0,
+                "message": "No extractable text found. OCR is required.",
+            }
+
+        # 7. Persist pages and chunks before vector indexing.
+        document.status = "indexing"
         db.commit()
+
+        # 8. Index persisted chunks in Qdrant.
+        try:
+            indexer = DocumentIndexer()
+
+            indexed_count = indexer.index_document(
+                db=db,
+                document_id=document.id,
+                workspace_id=document.workspace_id,
+            )
+
+            if indexed_count != len(chunks):
+                raise DocumentIndexingError(
+                    f"Expected {len(chunks)} vectors, "
+                    f"but indexed {indexed_count}."
+                )
+
+            document.status = "processed"
+            db.commit()
+
+        except Exception as exc:
+            db.rollback()
+
+            document = db.get(Document, document_id)
+            document.status = "index_failed"
+            document.extraction_error = str(exc)
+            db.commit()
+
+            raise HTTPException(
+                status_code=503,
+                detail=f"Document extraction succeeded, "
+                       f"but vector indexing failed: {exc}",
+            )
 
         return {
             "document_id": document.id,
@@ -194,7 +242,8 @@ def process_document(
             "page_count": result["page_count"],
             "total_characters": result["total_characters"],
             "chunk_count": len(chunks),
-            "message": "PDF extraction and chunking completed.",
+            "indexed_count": indexed_count,
+            "message": "PDF extraction, chunking, and vector indexing completed.",
         }
 
     except PDFExtractionError as exc:

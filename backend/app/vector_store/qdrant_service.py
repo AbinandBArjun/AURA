@@ -144,3 +144,45 @@ class QdrantService:
             ),
             wait=True,
         )
+
+    def delete_stale_document_chunks(
+        self,
+        document_id: int,
+        valid_chunk_ids: list[int],
+    ) -> None:
+        if not self.client.collection_exists(self.COLLECTION_NAME):
+            return
+
+        # Retrieve all vectors belonging to this document.
+        points, _ = self.client.scroll(
+            collection_name=self.COLLECTION_NAME,
+            scroll_filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="document_id",
+                        match=models.MatchValue(value=document_id),
+                    )
+                ]
+            ),
+            limit=1000,
+            with_payload=["chunk_id"],
+            with_vectors=False,
+        )
+
+        # Identify vectors that no longer exist in PostgreSQL.
+        valid_ids = set(valid_chunk_ids)
+
+        stale_point_ids = [
+            point.id
+            for point in points
+            if point.payload.get("chunk_id") not in valid_ids
+        ]
+
+        if stale_point_ids:
+            self.client.delete(
+                collection_name=self.COLLECTION_NAME,
+                points_selector=models.PointIdsList(
+                    points=stale_point_ids,
+                ),
+                wait=True,
+            )

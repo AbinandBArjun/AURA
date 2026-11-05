@@ -135,3 +135,61 @@ def test_invalid_search_limit_is_rejected(qdrant_service):
             limit=0,
         )
 
+
+def test_delete_stale_document_chunks(qdrant_service):
+    from types import SimpleNamespace
+
+    document_id = 101
+
+    chunks = [
+        SimpleNamespace(
+            id=1,
+            document_id=document_id,
+            chunk_index=0,
+            text="Current chunk one",
+            page_start=1,
+            page_end=1,
+            token_count=3,
+        ),
+        SimpleNamespace(
+            id=2,
+            document_id=document_id,
+            chunk_index=1,
+            text="Current chunk two",
+            page_start=1,
+            page_end=1,
+            token_count=3,
+        ),
+    ]
+
+    qdrant_service.upsert_chunks(chunks, workspace_id=1)
+
+    # Add a vector representing an obsolete chunk.
+    stale_chunk = SimpleNamespace(
+        id=3,
+        document_id=document_id,
+        chunk_index=2,
+        text="Obsolete chunk",
+        page_start=1,
+        page_end=1,
+        token_count=2,
+    )
+
+    qdrant_service.upsert_chunks([stale_chunk], workspace_id=1)
+
+    qdrant_service.delete_stale_document_chunks(
+        document_id=document_id,
+        valid_chunk_ids=[1, 2],
+    )
+
+    results = qdrant_service.search(
+        query="Current chunk",
+        workspace_id=1,
+        limit=10,
+    )
+
+    returned_ids = {result["chunk_id"] for result in results}
+
+    assert returned_ids == {1, 2}
+
+
