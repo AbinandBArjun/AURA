@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -27,6 +27,18 @@ class DocumentChunk(Base):
     token_count: Mapped[int] = mapped_column(Integer)
     page_start: Mapped[int] = mapped_column(Integer)
     page_end: Mapped[int] = mapped_column(Integer)
+
+    section = Column(
+        String(50),
+        nullable=False,
+        default="body",
+    )
+
+    retrievable = Column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
 
     document: Mapped["Document"] = relationship(
         back_populates="chunks"

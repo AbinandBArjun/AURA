@@ -29,3 +29,4 @@ Thumbs.db
 # Storage / Uploads
 backend/app/storage/uploads/*
 !backend/app/storage/uploads/.gitkeep
+backend/tests/fixtures/paper_candidate_headings.txt

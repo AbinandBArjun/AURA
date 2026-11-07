@@ -12,11 +12,21 @@ class SearchService:
 
     def search(
         self,
-        db: Session,
-        workspace_id: int,
-        query: str,
+        db: Session | None = None,
+        workspace_id: int = 0,
+        query: str = "",
         limit: int = 5,
     ) -> list[dict]:
+        if db is None:
+            from app.db.session import SessionLocal
+
+            with SessionLocal() as session:
+                return self.search(
+                    db=session,
+                    workspace_id=workspace_id,
+                    query=query,
+                    limit=limit,
+                )
 
         # Confirm that the workspace exists.
         workspace = db.get(Workspace, workspace_id)

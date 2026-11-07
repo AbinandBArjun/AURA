@@ -6,6 +6,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.chunking.section_classifier import SectionClassifier
 from app.chunking.text_chunker import TextChunker
 from app.models import Document, DocumentPage, DocumentChunk, Workspace
 from app.services.document_indexer import (
@@ -165,7 +166,13 @@ def process_document(
             chunk_overlap=75,
         )
 
-        chunks = chunker.chunk_pages(result["pages"])
+        classifier = SectionClassifier()
+
+        annotated_segments = classifier.annotate_pages(
+            result["pages"]
+        )
+
+        chunks = chunker.chunk_pages(annotated_segments)
 
         # 5. Store chunks in PostgreSQL.
         for chunk in chunks:
@@ -177,6 +184,8 @@ def process_document(
                     token_count=chunk.token_count,
                     page_start=chunk.page_start,
                     page_end=chunk.page_end,
+                    section=chunk.section,
+                    retrievable=chunk.retrievable,
                 )
             )
 
@@ -212,9 +221,13 @@ def process_document(
                 workspace_id=document.workspace_id,
             )
 
-            if indexed_count != len(chunks):
+            expected_indexed_count = sum(
+                1 for chunk in chunks if chunk.retrievable
+            )
+
+            if indexed_count != expected_indexed_count:
                 raise DocumentIndexingError(
-                    f"Expected {len(chunks)} vectors, "
+                    f"Expected {expected_indexed_count} retrievable vectors, "
                     f"but indexed {indexed_count}."
                 )
 

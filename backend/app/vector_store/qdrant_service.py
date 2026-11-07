@@ -20,21 +20,31 @@ class QdrantService:
         )
 
     def ensure_collection(self) -> None:
-        if self.client.collection_exists(self.COLLECTION_NAME):
-            return
+        if not self.client.collection_exists(self.COLLECTION_NAME):
+            self.client.create_collection(
+                collection_name=self.COLLECTION_NAME,
+                vectors_config=models.VectorParams(
+                    size=self.VECTOR_SIZE,
+                    distance=models.Distance.COSINE,
+                ),
+            )
 
-        self.client.create_collection(
-            collection_name=self.COLLECTION_NAME,
-            vectors_config=models.VectorParams(
-                size=self.VECTOR_SIZE,
-                distance=models.Distance.COSINE,
-            ),
-        )
-
-        # Index workspace_id for efficient filtered retrieval.
+        # Index fields used for filtered retrieval and cleanup.
         self.client.create_payload_index(
             collection_name=self.COLLECTION_NAME,
             field_name="workspace_id",
+            field_schema=models.PayloadSchemaType.INTEGER,
+        )
+
+        self.client.create_payload_index(
+            collection_name=self.COLLECTION_NAME,
+            field_name="retrievable",
+            field_schema=models.PayloadSchemaType.BOOL,
+        )
+
+        self.client.create_payload_index(
+            collection_name=self.COLLECTION_NAME,
+            field_name="document_id",
             field_schema=models.PayloadSchemaType.INTEGER,
         )
 
@@ -73,6 +83,8 @@ class QdrantService:
                         "page_start": chunk.page_start,
                         "page_end": chunk.page_end,
                         "token_count": chunk.token_count,
+                        "section": getattr(chunk, "section", "body"),
+                        "retrievable": getattr(chunk, "retrievable", True),
                     },
                 )
             )
@@ -111,7 +123,11 @@ class QdrantService:
                     models.FieldCondition(
                         key="workspace_id",
                         match=models.MatchValue(value=workspace_id),
-                    )
+                    ),
+                    models.FieldCondition(
+                        key="retrievable",
+                        match=models.MatchValue(value=True),
+                    ),
                 ]
             ),
             limit=limit,
@@ -153,36 +169,42 @@ class QdrantService:
         if not self.client.collection_exists(self.COLLECTION_NAME):
             return
 
-        # Retrieve all vectors belonging to this document.
-        points, _ = self.client.scroll(
-            collection_name=self.COLLECTION_NAME,
-            scroll_filter=models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="document_id",
-                        match=models.MatchValue(value=document_id),
-                    )
-                ]
-            ),
-            limit=1000,
-            with_payload=["chunk_id"],
-            with_vectors=False,
-        )
-
-        # Identify vectors that no longer exist in PostgreSQL.
         valid_ids = set(valid_chunk_ids)
+        offset = None
 
-        stale_point_ids = [
-            point.id
-            for point in points
-            if point.payload.get("chunk_id") not in valid_ids
-        ]
-
-        if stale_point_ids:
-            self.client.delete(
+        while True:
+            points, next_offset = self.client.scroll(
                 collection_name=self.COLLECTION_NAME,
-                points_selector=models.PointIdsList(
-                    points=stale_point_ids,
+                scroll_filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="document_id",
+                            match=models.MatchValue(value=document_id),
+                        )
+                    ]
                 ),
-                wait=True,
+                limit=500,
+                offset=offset,
+                with_payload=["chunk_id"],
+                with_vectors=False,
             )
+
+            stale_point_ids = [
+                point.id
+                for point in points
+                if point.payload.get("chunk_id") not in valid_ids
+            ]
+
+            if stale_point_ids:
+                self.client.delete(
+                    collection_name=self.COLLECTION_NAME,
+                    points_selector=models.PointIdsList(
+                        points=stale_point_ids,
+                    ),
+                    wait=True,
+                )
+
+            if next_offset is None:
+                break
+
+            offset = next_offset

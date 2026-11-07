@@ -9,6 +9,8 @@ class TextChunk:
     token_count: int
     page_start: int
     page_end: int
+    section: str = "body"
+    retrievable: bool = True
 
 
 class TextChunker:
@@ -33,59 +35,25 @@ class TextChunker:
 
     def chunk_pages(self, pages: list[dict]) -> list[TextChunk]:
         """
-        Convert extracted PDF pages into overlapping token-based chunks.
+        Accepts either original pages or section-annotated segments.
 
-        Each page must contain:
-            {
-                "page_number": 1,
-                "text": "Extracted page text..."
-            }
+        Annotated segments must contain:
+        page_number, text, section, retrievable.
         """
 
         chunks = []
         current_tokens = []
         current_pages = []
+        current_section = None
+        current_retrievable = True
         chunk_index = 0
 
-        for page in pages:
-            page_number = page["page_number"]
-            page_text = page["text"].strip()
+        def flush():
+            nonlocal chunk_index, current_tokens, current_pages
 
-            if not page_text:
-                continue
+            if not current_tokens:
+                return
 
-            page_tokens = self.encoding.encode(page_text)
-
-            for token in page_tokens:
-                current_tokens.append(token)
-                current_pages.append(page_number)
-
-                if len(current_tokens) >= self.chunk_size:
-                    chunk_text = self.encoding.decode(current_tokens)
-
-                    chunks.append(
-                        TextChunk(
-                            chunk_index=chunk_index,
-                            text=chunk_text,
-                            token_count=len(current_tokens),
-                            page_start=min(current_pages),
-                            page_end=max(current_pages),
-                        )
-                    )
-
-                    chunk_index += 1
-
-                    if self.chunk_overlap:
-                        overlap_tokens = current_tokens[-self.chunk_overlap:]
-                        overlap_pages = current_pages[-self.chunk_overlap:]
-                    else:
-                        overlap_tokens = []
-                        overlap_pages = []
-
-                    current_tokens = list(overlap_tokens)
-                    current_pages = list(overlap_pages)
-
-        if current_tokens:
             chunks.append(
                 TextChunk(
                     chunk_index=chunk_index,
@@ -93,7 +61,55 @@ class TextChunker:
                     token_count=len(current_tokens),
                     page_start=min(current_pages),
                     page_end=max(current_pages),
+                    section=current_section or "body",
+                    retrievable=current_retrievable,
                 )
             )
+
+            chunk_index += 1
+
+        for segment in pages:
+            page_number = segment["page_number"]
+            text = segment["text"].strip()
+
+            if not text:
+                continue
+
+            section = segment.get("section", "body")
+            retrievable = segment.get("retrievable", True)
+
+            # Never mix different sections or retrieval policies.
+            if current_tokens and (
+                section != current_section
+                or retrievable != current_retrievable
+            ):
+                flush()
+                current_tokens = []
+                current_pages = []
+
+            current_section = section
+            current_retrievable = retrievable
+
+            page_tokens = self.encoding.encode(text)
+
+            for token in page_tokens:
+                current_tokens.append(token)
+                current_pages.append(page_number)
+
+                if len(current_tokens) >= self.chunk_size:
+                    flush()
+
+                    if self.chunk_overlap:
+                        current_tokens = current_tokens[
+                            -self.chunk_overlap:
+                        ]
+                        current_pages = current_pages[
+                            -self.chunk_overlap:
+                        ]
+                    else:
+                        current_tokens = []
+                        current_pages = []
+
+        flush()
 
         return chunks
