@@ -1,4 +1,5 @@
-from unittest.mock import patch
+import pytest
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -36,13 +37,23 @@ def test_search_service_returns_document_metadata(
         }
     ]
 
+    mock_reranker = MagicMock()
+    mock_reranker.rerank.side_effect = lambda query, results, limit: [
+        {
+            **result,
+            "rrf_score": result["rrf_score"],
+            "rerank_score": 0.92,
+        }
+        for result in results[:limit]
+    ]
+
     with patch(
         "app.services.search_service.QdrantService"
     ) as mock_qdrant:
 
         mock_qdrant.return_value.search.return_value = mock_results
 
-        service = SearchService()
+        service = SearchService(reranker=mock_reranker)
 
         results = service.search(
             db=db_session,
@@ -55,7 +66,7 @@ def test_search_service_returns_document_metadata(
     assert results[0]["filename"] == "test-paper.pdf"
     assert results[0]["chunk_id"] == 10
     assert results[0]["page_start"] == 1
-    assert results[0]["score"] == 0.85
+    assert results[0]["score"] == pytest.approx(0.92)
 
 
 def test_search_service_rejects_missing_workspace(db_session):
@@ -129,3 +140,151 @@ def test_search_api_rejects_invalid_request():
     )
 
     assert response.status_code == 422
+
+
+def test_search_service_returns_bm25_results_without_dense_matches(
+    db_session,
+    test_workspace,
+):
+    document = Document(
+        workspace_id=test_workspace.id,
+        filename="sparse-paper.pdf",
+        content_type="application/pdf",
+        size_bytes=100,
+        checksum_sha256="sparse-search-checksum",
+        storage_key="sparse-paper.pdf",
+        status="processed",
+    )
+
+    db_session.add(document)
+    db_session.commit()
+    db_session.refresh(document)
+
+    qdrant = MagicMock()
+    qdrant.search.return_value = []
+
+    bm25 = MagicMock()
+    bm25.search.return_value = [
+        {
+            "document_id": document.id,
+            "filename": document.filename,
+            "chunk_id": 25,
+            "text": "Artificial intelligence changes labor markets.",
+            "page_start": 4,
+            "page_end": 5,
+            "section": "ai_labor",
+            "score": 2.5,
+        }
+    ]
+
+    reranker = MagicMock()
+    reranker.rerank.side_effect = lambda query, results, limit: [
+        {
+            **result,
+            "rerank_score": 0.91,
+        }
+        for result in results[:limit]
+    ]
+
+    service = SearchService(
+        qdrant_service=qdrant,
+        bm25_retriever=bm25,
+        reranker=reranker,
+    )
+
+    results = service.search(
+        db=db_session,
+        workspace_id=test_workspace.id,
+        query="artificial intelligence labor markets",
+        limit=5,
+    )
+
+    assert len(results) == 1
+    assert results[0]["chunk_id"] == 25
+    assert results[0]["filename"] == "sparse-paper.pdf"
+    assert results[0]["score"] == pytest.approx(0.91)
+
+    qdrant.search.assert_called_once()
+    bm25.search.assert_called_once()
+
+
+def test_search_service_uses_reranked_order(
+    db_session,
+    test_workspace,
+):
+    document = Document(
+        workspace_id=test_workspace.id,
+        filename="reranking-paper.pdf",
+        content_type="application/pdf",
+        size_bytes=100,
+        checksum_sha256="reranking-search-checksum",
+        storage_key="reranking-paper.pdf",
+        status="processed",
+    )
+
+    db_session.add(document)
+    db_session.commit()
+    db_session.refresh(document)
+
+    qdrant = MagicMock()
+    qdrant.search.return_value = [
+        {
+            "document_id": document.id,
+            "chunk_id": 1,
+            "text": "General artificial intelligence discussion.",
+            "page_start": 1,
+            "page_end": 2,
+            "score": 0.90,
+        }
+    ]
+
+    bm25 = MagicMock()
+    bm25.search.return_value = [
+        {
+            "document_id": document.id,
+            "filename": document.filename,
+            "chunk_id": 2,
+            "text": "Specific evidence about AI labor markets.",
+            "page_start": 3,
+            "page_end": 4,
+            "score": 2.5,
+        }
+    ]
+
+    reranker = MagicMock()
+
+    def mock_rerank(query, results, limit):
+        ranked = sorted(
+            results,
+            key=lambda item: item["chunk_id"],
+            reverse=True,
+        )
+
+        return [
+            {
+                **item,
+                "rerank_score": 0.95 - index * 0.1,
+            }
+            for index, item in enumerate(ranked[:limit])
+        ]
+
+    reranker.rerank.side_effect = mock_rerank
+
+    service = SearchService(
+        qdrant_service=qdrant,
+        bm25_retriever=bm25,
+        reranker=reranker,
+    )
+
+    results = service.search(
+        db=db_session,
+        workspace_id=test_workspace.id,
+        query="AI labor markets",
+        limit=5,
+    )
+
+    assert len(results) == 2
+    assert results[0]["chunk_id"] == 2
+    assert results[1]["chunk_id"] == 1
+
+    reranker.rerank.assert_called_once()
