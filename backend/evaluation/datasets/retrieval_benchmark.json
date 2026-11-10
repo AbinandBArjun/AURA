@@ -1,0 +1,150 @@
+{
+  "dataset_name": "AURA Retrieval Benchmark",
+  "dataset_version": "0.2",
+  "description": "Manually proposed graded relevance judgements based on the AI and the Economy research paper.",
+  "workspace_id": 1,
+  "queries": [
+    {
+      "query_id": "labor_001",
+      "query": "What does the paper say about the relationship between AI and labor markets?",
+      "category": "labor",
+      "relevant_chunks": {
+        "150": 3,
+        "151": 3,
+        "152": 3,
+        "153": 3,
+        "154": 2,
+        "138": 2,
+        "161": 2,
+        "169": 2,
+        "170": 1
+      }
+    },
+    {
+      "query_id": "labor_002",
+      "query": "How can automation affect employment through job displacement and job creation?",
+      "category": "labor",
+      "relevant_chunks": {
+        "140": 3,
+        "150": 3,
+        "151": 3,
+        "152": 2,
+        "153": 2,
+        "139": 1
+      }
+    },
+    {
+      "query_id": "labor_003",
+      "query": "What evidence does the paper provide about AI-related automation risks across occupations?",
+      "category": "labor",
+      "relevant_chunks": {
+        "153": 3,
+        "154": 3,
+        "152": 2,
+        "150": 1
+      }
+    },
+    {
+      "query_id": "productivity_001",
+      "query": "What evidence links AI and robotics to productivity growth?",
+      "category": "productivity",
+      "relevant_chunks": {
+        "149": 3,
+        "148": 3,
+        "169": 3,
+        "140": 2,
+        "138": 2
+      }
+    },
+    {
+      "query_id": "productivity_002",
+      "query": "Why might technological progress in AI not immediately increase productivity?",
+      "category": "productivity",
+      "relevant_chunks": {
+        "148": 3,
+        "149": 3,
+        "144": 1,
+        "169": 2,
+        "170": 2
+      }
+    },
+    {
+      "query_id": "investment_001",
+      "query": "What evidence shows that investment and adoption of AI and robotics have increased?",
+      "category": "investment",
+      "relevant_chunks": {
+        "144": 3,
+        "145": 3,
+        "146": 3,
+        "147": 2,
+        "139": 2
+      }
+    },
+    {
+      "query_id": "policy_001",
+      "query": "What are the arguments for and against universal basic income as a response to AI-related labor disruption?",
+      "category": "policy",
+      "relevant_chunks": {
+        "162": 3,
+        "163": 3,
+        "161": 2,
+        "169": 2
+      }
+    },
+    {
+      "query_id": "policy_002",
+      "query": "How do employment subsidies compare with universal basic income?",
+      "category": "policy",
+      "relevant_chunks": {
+        "164": 3,
+        "165": 3,
+        "162": 2,
+        "163": 2,
+        "169": 2
+      }
+    },
+    {
+      "query_id": "policy_003",
+      "query": "What are the advantages and disadvantages of guaranteed employment?",
+      "category": "policy",
+      "relevant_chunks": {
+        "166": 3,
+        "167": 1,
+        "161": 1
+      }
+    },
+    {
+      "query_id": "governance_001",
+      "query": "What arguments does the paper make for and against creating an AI-specific government agency?",
+      "category": "governance",
+      "relevant_chunks": {
+        "167": 3,
+        "168": 3,
+        "166": 1,
+        "169": 2
+      }
+    },
+    {
+      "query_id": "competition_001",
+      "query": "How can large datasets and data portability affect competition in AI markets?",
+      "category": "competition",
+      "relevant_chunks": {
+        "158": 3,
+        "159": 3,
+        "160": 2,
+        "156": 1
+      }
+    },
+    {
+      "query_id": "competition_002",
+      "query": "How do network effects and switching costs contribute to concentration in digital markets?",
+      "category": "competition",
+      "relevant_chunks": {
+        "156": 3,
+        "157": 3,
+        "155": 2,
+        "158": 1
+      }
+    }
+  ]
+}

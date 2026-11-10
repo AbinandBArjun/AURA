@@ -10,6 +10,7 @@ from app.vector_store.qdrant_service import QdrantService
 
 class SearchService:
     CANDIDATE_LIMIT = 20
+    VALID_MODES = {"dense", "hybrid", "hybrid_rerank"}
 
     def __init__(
         self,
@@ -29,12 +30,16 @@ class SearchService:
         workspace_id: int = 0,
         query: str = "",
         limit: int = 5,
+        mode: str = "hybrid_rerank",
     ) -> list[dict]:
         if not query or not query.strip():
             raise ValueError("Search query cannot be empty.")
 
         if limit <= 0:
             raise ValueError("Search limit must be positive.")
+
+        if mode not in self.VALID_MODES:
+            raise ValueError(f"Invalid retrieval mode: {mode}")
 
         if db is None:
             from app.db.session import SessionLocal
@@ -45,6 +50,7 @@ class SearchService:
                     workspace_id=workspace_id,
                     query=query,
                     limit=limit,
+                    mode=mode,
                 )
 
         workspace = db.get(Workspace, workspace_id)
@@ -57,35 +63,42 @@ class SearchService:
         dense_results = self.qdrant_service.search(
             query=query,
             workspace_id=workspace_id,
-            limit=candidate_limit,
+            limit=candidate_limit if mode != "dense" else limit,
         )
 
-        sparse_results = self.bm25_retriever.search(
-            db=db,
-            workspace_id=workspace_id,
-            query=query,
-            limit=candidate_limit,
-        )
+        if mode == "dense":
+            selected_results = dense_results[:limit]
 
-        fused_results = self.rrf_fusion.fuse(
-            dense_results=dense_results,
-            sparse_results=sparse_results,
-            limit=candidate_limit,
-        )
+        else:
+            sparse_results = self.bm25_retriever.search(
+                db=db,
+                workspace_id=workspace_id,
+                query=query,
+                limit=candidate_limit,
+            )
 
-        if not fused_results:
+            fused_results = self.rrf_fusion.fuse(
+                dense_results=dense_results,
+                sparse_results=sparse_results,
+                limit=candidate_limit,
+            )
+
+            if mode == "hybrid":
+                selected_results = fused_results[:limit]
+
+            else:
+                selected_results = self.reranker.rerank(
+                    query=query,
+                    results=fused_results,
+                    limit=limit,
+                )
+
+        if not selected_results:
             return []
-
-        # Rerank the complete fused candidate pool.
-        reranked_results = self.reranker.rerank(
-            query=query,
-            results=fused_results,
-            limit=limit,
-        )
 
         document_ids = {
             result["document_id"]
-            for result in reranked_results
+            for result in selected_results
         }
 
         documents = db.scalars(
@@ -102,11 +115,16 @@ class SearchService:
 
         results = []
 
-        for result in reranked_results:
+        for result in selected_results:
             document = documents_by_id.get(result["document_id"])
 
             if document is None:
                 continue
+
+            score = result.get(
+                "rerank_score",
+                result.get("rrf_score", result.get("score")),
+            )
 
             results.append({
                 "document_id": document.id,
@@ -115,7 +133,7 @@ class SearchService:
                 "text": result["text"],
                 "page_start": result["page_start"],
                 "page_end": result["page_end"],
-                "score": result["rerank_score"],
+                "score": score,
             })
 
         return results

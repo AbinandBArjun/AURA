@@ -1,0 +1,498 @@
+{
+  "dataset_name": "AURA Retrieval Benchmark",
+  "dataset_version": "0.2",
+  "workspace_id": 1,
+  "top_k": 5,
+  "query_count": 12,
+  "results": {
+    "dense": {
+      "recall_at_5": 0.6263888888888889,
+      "mrr": 0.8611111111111112,
+      "ndcg_at_5": 0.7064981883081125,
+      "per_query": [
+        {
+          "query_id": "labor_001",
+          "retrieved_chunk_ids": [
+            "142",
+            "138",
+            "150",
+            "148",
+            "161"
+          ],
+          "recall_at_5": 0.3333333333333333,
+          "mrr": 0.5,
+          "ndcg_at_5": 0.34325452753809366
+        },
+        {
+          "query_id": "labor_002",
+          "retrieved_chunk_ids": [
+            "153",
+            "140",
+            "150",
+            "151",
+            "154"
+          ],
+          "recall_at_5": 0.6666666666666666,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.8020707516388106
+        },
+        {
+          "query_id": "labor_003",
+          "retrieved_chunk_ids": [
+            "168",
+            "153",
+            "154",
+            "138",
+            "140"
+          ],
+          "recall_at_5": 0.5,
+          "mrr": 0.5,
+          "ndcg_at_5": 0.5931219484863599
+        },
+        {
+          "query_id": "productivity_001",
+          "retrieved_chunk_ids": [
+            "149",
+            "169",
+            "138",
+            "151",
+            "148"
+          ],
+          "recall_at_5": 0.8,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.8995561767851945
+        },
+        {
+          "query_id": "productivity_002",
+          "retrieved_chunk_ids": [
+            "149",
+            "150",
+            "153",
+            "169",
+            "148"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.7536625437723986
+        },
+        {
+          "query_id": "investment_001",
+          "retrieved_chunk_ids": [
+            "149",
+            "138",
+            "139",
+            "147",
+            "145"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 0.3333333333333333,
+          "ndcg_at_5": 0.31665431565392255
+        },
+        {
+          "query_id": "policy_001",
+          "retrieved_chunk_ids": [
+            "161",
+            "138",
+            "162",
+            "153",
+            "154"
+          ],
+          "recall_at_5": 0.5,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.45747141776516514
+        },
+        {
+          "query_id": "policy_002",
+          "retrieved_chunk_ids": [
+            "162",
+            "165",
+            "164",
+            "161",
+            "166"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.7102895324186121
+        },
+        {
+          "query_id": "policy_003",
+          "retrieved_chunk_ids": [
+            "166",
+            "165",
+            "161",
+            "154",
+            "138"
+          ],
+          "recall_at_5": 0.6666666666666666,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9224037382324788
+        },
+        {
+          "query_id": "governance_001",
+          "retrieved_chunk_ids": [
+            "168",
+            "142",
+            "138",
+            "161",
+            "167"
+          ],
+          "recall_at_5": 0.5,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.7273421153639809
+        },
+        {
+          "query_id": "competition_001",
+          "retrieved_chunk_ids": [
+            "158",
+            "159",
+            "155",
+            "160",
+            "138"
+          ],
+          "recall_at_5": 0.75,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9521511920423338
+        },
+        {
+          "query_id": "competition_002",
+          "retrieved_chunk_ids": [
+            "157",
+            "156",
+            "155",
+            "158",
+            "137"
+          ],
+          "recall_at_5": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_5": 1.0
+        }
+      ]
+    },
+    "hybrid": {
+      "recall_at_5": 0.6912037037037037,
+      "mrr": 1.0,
+      "ndcg_at_5": 0.8446403900979309,
+      "per_query": [
+        {
+          "query_id": "labor_001",
+          "retrieved_chunk_ids": [
+            "153",
+            "150",
+            "148",
+            "152",
+            "154"
+          ],
+          "recall_at_5": 0.4444444444444444,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.816675246819798
+        },
+        {
+          "query_id": "labor_002",
+          "retrieved_chunk_ids": [
+            "151",
+            "153",
+            "150",
+            "140",
+            "152"
+          ],
+          "recall_at_5": 0.8333333333333334,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9538828753732315
+        },
+        {
+          "query_id": "labor_003",
+          "retrieved_chunk_ids": [
+            "153",
+            "154",
+            "138",
+            "152",
+            "140"
+          ],
+          "recall_at_5": 0.75,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9521511920423338
+        },
+        {
+          "query_id": "productivity_001",
+          "retrieved_chunk_ids": [
+            "149",
+            "151",
+            "138",
+            "169",
+            "148"
+          ],
+          "recall_at_5": 0.8,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.8188512086883493
+        },
+        {
+          "query_id": "productivity_002",
+          "retrieved_chunk_ids": [
+            "149",
+            "148",
+            "169",
+            "150",
+            "153"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.884971734606542
+        },
+        {
+          "query_id": "investment_001",
+          "retrieved_chunk_ids": [
+            "145",
+            "144",
+            "138",
+            "147",
+            "151"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.731675251137104
+        },
+        {
+          "query_id": "policy_001",
+          "retrieved_chunk_ids": [
+            "161",
+            "162",
+            "138",
+            "169",
+            "153"
+          ],
+          "recall_at_5": 0.75,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.6129088003525526
+        },
+        {
+          "query_id": "policy_002",
+          "retrieved_chunk_ids": [
+            "162",
+            "161",
+            "165",
+            "164",
+            "166"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.619082324482927
+        },
+        {
+          "query_id": "policy_003",
+          "retrieved_chunk_ids": [
+            "166",
+            "138",
+            "161",
+            "165",
+            "153"
+          ],
+          "recall_at_5": 0.6666666666666666,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9224037382324788
+        },
+        {
+          "query_id": "governance_001",
+          "retrieved_chunk_ids": [
+            "167",
+            "168",
+            "159",
+            "160",
+            "142"
+          ],
+          "recall_at_5": 0.5,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.855349530090474
+        },
+        {
+          "query_id": "competition_001",
+          "retrieved_chunk_ids": [
+            "159",
+            "158",
+            "160",
+            "155",
+            "157"
+          ],
+          "recall_at_5": 0.75,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9677327793493801
+        },
+        {
+          "query_id": "competition_002",
+          "retrieved_chunk_ids": [
+            "156",
+            "157",
+            "155",
+            "158",
+            "159"
+          ],
+          "recall_at_5": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_5": 1.0
+        }
+      ]
+    },
+    "hybrid_rerank": {
+      "recall_at_5": 0.7449074074074074,
+      "mrr": 0.9166666666666666,
+      "ndcg_at_5": 0.7757541297655243,
+      "per_query": [
+        {
+          "query_id": "labor_001",
+          "retrieved_chunk_ids": [
+            "138",
+            "150",
+            "161",
+            "152",
+            "151"
+          ],
+          "recall_at_5": 0.5555555555555556,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.7667800750091858
+        },
+        {
+          "query_id": "labor_002",
+          "retrieved_chunk_ids": [
+            "151",
+            "150",
+            "153",
+            "154",
+            "140"
+          ],
+          "recall_at_5": 0.6666666666666666,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.8995561767851945
+        },
+        {
+          "query_id": "labor_003",
+          "retrieved_chunk_ids": [
+            "152",
+            "138",
+            "154",
+            "153",
+            "151"
+          ],
+          "recall_at_5": 0.75,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.7128646246762654
+        },
+        {
+          "query_id": "productivity_001",
+          "retrieved_chunk_ids": [
+            "138",
+            "149",
+            "148",
+            "169",
+            "151"
+          ],
+          "recall_at_5": 0.8,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.8020707516388106
+        },
+        {
+          "query_id": "productivity_002",
+          "retrieved_chunk_ids": [
+            "169",
+            "150",
+            "149",
+            "148",
+            "151"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.6519000460680223
+        },
+        {
+          "query_id": "investment_001",
+          "retrieved_chunk_ids": [
+            "138",
+            "145",
+            "169",
+            "144",
+            "139"
+          ],
+          "recall_at_5": 0.6,
+          "mrr": 0.5,
+          "ndcg_at_5": 0.49466031045807995
+        },
+        {
+          "query_id": "policy_001",
+          "retrieved_chunk_ids": [
+            "162",
+            "161",
+            "169",
+            "138",
+            "153"
+          ],
+          "recall_at_5": 0.75,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.7314467750205518
+        },
+        {
+          "query_id": "policy_002",
+          "retrieved_chunk_ids": [
+            "161",
+            "162",
+            "164",
+            "165",
+            "169"
+          ],
+          "recall_at_5": 0.8,
+          "mrr": 0.5,
+          "ndcg_at_5": 0.6225534252640323
+        },
+        {
+          "query_id": "policy_003",
+          "retrieved_chunk_ids": [
+            "166",
+            "161",
+            "138",
+            "164",
+            "165"
+          ],
+          "recall_at_5": 0.6666666666666666,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.938506417451168
+        },
+        {
+          "query_id": "governance_001",
+          "retrieved_chunk_ids": [
+            "167",
+            "166",
+            "160",
+            "168",
+            "142"
+          ],
+          "recall_at_5": 0.75,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.7975963316028882
+        },
+        {
+          "query_id": "competition_001",
+          "retrieved_chunk_ids": [
+            "158",
+            "159",
+            "155",
+            "160",
+            "156"
+          ],
+          "recall_at_5": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9811350423502985
+        },
+        {
+          "query_id": "competition_002",
+          "retrieved_chunk_ids": [
+            "156",
+            "158",
+            "155",
+            "157",
+            "169"
+          ],
+          "recall_at_5": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_5": 0.9099795808617943
+        }
+      ]
+    }
+  }
+}
