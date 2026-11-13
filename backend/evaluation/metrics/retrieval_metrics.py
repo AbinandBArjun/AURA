@@ -94,3 +94,30 @@ def ndcg_at_k(
         return 0.0
 
     return actual_dcg / ideal_dcg
+
+
+def precision_at_k(
+    retrieved_ids: list[int | str],
+    relevant_chunks: dict[str, int],
+    k: int,
+) -> float:
+    if k <= 0:
+        raise ValueError("k must be positive.")
+
+    relevance = _normalise_relevance(relevant_chunks)
+
+    if not retrieved_ids:
+        return 0.0
+
+    retrieved = [
+        str(chunk_id)
+        for chunk_id in retrieved_ids[:k]
+    ]
+
+    relevant_count = sum(
+        1
+        for chunk_id in retrieved
+        if relevance.get(chunk_id, 0) > 0
+    )
+
+    return relevant_count / k

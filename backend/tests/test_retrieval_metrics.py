@@ -1,6 +1,7 @@
 import pytest
 
 from evaluation.metrics.retrieval_metrics import (
+    precision_at_k,
     recall_at_k,
     reciprocal_rank,
     dcg_at_k,
@@ -61,3 +62,37 @@ def test_dcg_rejects_invalid_k(relevance):
     with pytest.raises(ValueError):
         dcg_at_k([101], relevance, 0)
 
+
+def test_precision_at_k():
+    retrieved = ["101", "102", "103", "104", "105"]
+
+    relevant = {
+        "101": 3,
+        "102": 2,
+        "103": 0,
+        "104": 1,
+        "105": 0,
+    }
+
+    assert precision_at_k(retrieved, relevant, 5) == 0.6
+
+
+def test_precision_at_k_with_integer_ids():
+    retrieved = [101, 102, 103]
+
+    relevant = {
+        "101": 3,
+        "102": 0,
+        "103": 2,
+    }
+
+    assert precision_at_k(retrieved, relevant, 3) == 2 / 3
+
+
+def test_precision_at_k_when_no_results():
+    assert precision_at_k([], {"101": 3}, 5) == 0.0
+
+
+def test_precision_at_k_rejects_invalid_k():
+    with pytest.raises(ValueError):
+        precision_at_k(["101"], {"101": 3}, 0)

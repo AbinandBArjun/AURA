@@ -31,6 +31,7 @@ class SearchService:
         query: str = "",
         limit: int = 5,
         mode: str = "hybrid_rerank",
+        candidate_pool_size: int | None = None,
     ) -> list[dict]:
         if not query or not query.strip():
             raise ValueError("Search query cannot be empty.")
@@ -40,6 +41,15 @@ class SearchService:
 
         if mode not in self.VALID_MODES:
             raise ValueError(f"Invalid retrieval mode: {mode}")
+
+        if candidate_pool_size is not None:
+            if candidate_pool_size <= 0:
+                raise ValueError("Candidate pool size must be positive.")
+
+            if candidate_pool_size < limit:
+                raise ValueError(
+                    "Candidate pool size must be greater than or equal to limit."
+                )
 
         if db is None:
             from app.db.session import SessionLocal
@@ -51,6 +61,7 @@ class SearchService:
                     query=query,
                     limit=limit,
                     mode=mode,
+                    candidate_pool_size=candidate_pool_size,
                 )
 
         workspace = db.get(Workspace, workspace_id)
@@ -58,7 +69,11 @@ class SearchService:
         if workspace is None:
             raise ValueError("Workspace not found.")
 
-        candidate_limit = max(self.CANDIDATE_LIMIT, limit * 4)
+        candidate_limit = (
+            candidate_pool_size
+            if candidate_pool_size is not None
+            else max(self.CANDIDATE_LIMIT, limit * 4)
+        )
 
         dense_results = self.qdrant_service.search(
             query=query,
