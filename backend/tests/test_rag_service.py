@@ -1,6 +1,9 @@
 import pytest
 
 from app.llm import OllamaError
+from app.services.claim_verifier import (
+    extract_claims_from_answer,
+)
 from app.services.rag_service import RAGService, RAGError
 
 
@@ -118,3 +121,66 @@ def test_ollama_failure_raises_rag_error(sample_results):
 
     with pytest.raises(RAGError):
         service.answer(1, "What is RAG?")
+
+
+def test_rag_rejects_uncited_sentence(sample_results):
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(
+            response=(
+                "RAG combines retrieval and generation [S1]. "
+                "It always guarantees accurate answers."
+            )
+        ),
+    )
+
+    result = service.answer(1, "What is RAG?")
+
+    assert result["answer"] == RAGService.INSUFFICIENT_EVIDENCE
+    assert result["citations"] == []
+
+
+def test_rag_accepts_multiple_cited_sentences(sample_results):
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(
+            response=(
+                "RAG combines retrieval and generation [S1]. "
+                "Retrieved evidence can improve answer relevance [S2]."
+            )
+        ),
+    )
+
+    result = service.answer(1, "What is RAG?")
+
+    assert result["answer"] != RAGService.INSUFFICIENT_EVIDENCE
+    assert len(result["citations"]) == 2
+
+
+def test_rag_rejects_fabricated_citation_in_sentence(sample_results):
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(
+            response="RAG guarantees perfect accuracy [S99]."
+        ),
+    )
+
+    result = service.answer(1, "What is RAG?")
+
+    assert result["answer"] == RAGService.INSUFFICIENT_EVIDENCE
+    assert result["citations"] == []
+
+
+def test_extract_claims_from_answer():
+    answer = (
+        "RAG combines retrieval and generation [S1]. "
+        "Evidence improves relevance [S2]."
+    )
+
+    claims = extract_claims_from_answer(answer)
+
+    assert len(claims) == 2
+    assert claims[0]["claim_id"] == "C1"
+    assert claims[0]["citation_ids"] == ["S1"]
+    assert claims[1]["claim_id"] == "C2"
+    assert claims[1]["citation_ids"] == ["S2"]

@@ -1,6 +1,11 @@
 import re
 
 from app.llm import OllamaClient, OllamaError
+from app.services.claim_verifier import (
+    ClaimCitationError,
+    extract_claims_from_answer,
+    validate_claim_citations,
+)
 from app.services.search_service import SearchService
 
 
@@ -104,17 +109,15 @@ Write an evidence-based answer with citations.
                 "evidence_count": len(results),
             }
 
-        # Extract every citation ID used by the model.
-        cited_ids = re.findall(r"\[(S\d+)\]", generated_answer)
+        try:
+            claims = extract_claims_from_answer(generated_answer)
 
-        # Reject answers containing citation IDs that were never supplied.
-        invalid_ids = {
-            citation_id
-            for citation_id in cited_ids
-            if citation_id not in citation_map
-        }
+            validated_claims = validate_claim_citations(
+                claims=claims,
+                evidence_map=citation_map,
+            )
 
-        if invalid_ids:
+        except ClaimCitationError:
             return {
                 "question": question,
                 "answer": self.INSUFFICIENT_EVIDENCE,
@@ -122,22 +125,17 @@ Write an evidence-based answer with citations.
                 "evidence_count": len(results),
             }
 
-        # Preserve citation order while removing duplicates.
-        unique_cited_ids = list(dict.fromkeys(cited_ids))
+        # Collect validated citations in their original order.
+        unique_cited_ids = list(dict.fromkeys(
+            citation["citation_id"]
+            for claim in validated_claims
+            for citation in claim["citations"]
+        ))
 
         valid_citations = [
             citation_map[citation_id]
             for citation_id in unique_cited_ids
         ]
-
-        # Reject answers without valid citations.
-        if not valid_citations:
-            return {
-                "question": question,
-                "answer": self.INSUFFICIENT_EVIDENCE,
-                "citations": [],
-                "evidence_count": len(results),
-            }
 
         return {
             "question": question,
