@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -16,8 +18,22 @@ class Citation(BaseModel):
     score: float
 
 
+class ClaimVerification(BaseModel):
+    claim_id: str
+    claim_text: str
+    status: Literal[
+        "supported",
+        "partially_supported",
+        "contradicted",
+        "insufficient_evidence",
+    ]
+    rationale: str
+    evidence_ids: list[str]
+
+
 class RAGResponse(BaseModel):
     question: str
     answer: str
     citations: list[Citation]
     evidence_count: int
+    claims: list[ClaimVerification] = Field(default_factory=list)

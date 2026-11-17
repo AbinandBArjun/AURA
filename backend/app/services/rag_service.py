@@ -7,10 +7,14 @@ from app.services.claim_verifier import (
     validate_claim_citations,
 )
 from app.services.search_service import SearchService
+from app.services.semantic_verifier import (
+    SemanticClaimVerifier,
+    SemanticVerifierError,
+)
 
 
 class RAGError(Exception):
-    """Raised when RAG answer generation fails."""
+    """Raised when RAG answer generation or verification fails."""
 
 
 class RAGService:
@@ -33,9 +37,23 @@ Rules:
 6. Be precise and distinguish evidence from interpretation.
 """
 
-    def __init__(self, search_service=None, ollama_client=None):
-        self.search_service = search_service or SearchService()
-        self.ollama_client = ollama_client or OllamaClient()
+    def __init__(
+        self,
+        search_service=None,
+        ollama_client=None,
+        semantic_verifier=None,
+    ):
+        self.search_service = (
+            search_service if search_service is not None else SearchService()
+        )
+        self.ollama_client = (
+            ollama_client if ollama_client is not None else OllamaClient()
+        )
+        self.semantic_verifier = (
+            semantic_verifier
+            if semantic_verifier is not None
+            else SemanticClaimVerifier(self.ollama_client)
+        )
 
     def answer(self, workspace_id: int, question: str, limit: int = 5):
         if not question or not question.strip():
@@ -53,10 +71,12 @@ Rules:
                 "answer": self.INSUFFICIENT_EVIDENCE,
                 "citations": [],
                 "evidence_count": 0,
+                "claims": [],
             }
 
         evidence_sections = []
         citation_map = {}
+        evidence_text_map = {}
 
         for index, result in enumerate(results, start=1):
             citation_id = f"S{index}"
@@ -69,6 +89,8 @@ Rules:
                 "page_end": result["page_end"],
                 "score": result["score"],
             }
+
+            evidence_text_map[citation_id] = result["text"]
 
             evidence_sections.append(
                 f"""
@@ -107,6 +129,7 @@ Write an evidence-based answer with citations.
                 "answer": self.INSUFFICIENT_EVIDENCE,
                 "citations": [],
                 "evidence_count": len(results),
+                "claims": [],
             }
 
         try:
@@ -123,7 +146,46 @@ Write an evidence-based answer with citations.
                 "answer": self.INSUFFICIENT_EVIDENCE,
                 "citations": [],
                 "evidence_count": len(results),
+                "claims": [],
             }
+
+        # Semantically verify each claim against only its cited evidence.
+        verification_results = []
+
+        try:
+            for claim in validated_claims:
+                claim_evidence = [
+                    {
+                        "citation_id": citation["citation_id"],
+                        "text": evidence_text_map[citation["citation_id"]],
+                    }
+                    for citation in claim["citations"]
+                ]
+
+                verification_claim_text = re.sub(
+                    r"\s*\[S\d+\]",
+                    "",
+                    claim["text"],
+                ).strip()
+
+                verification = self.semantic_verifier.verify_claim(
+                    claim_id=claim["claim_id"],
+                    claim_text=verification_claim_text,
+                    evidence=claim_evidence,
+                )
+
+                verification_results.append({
+                    "claim_id": verification.claim_id,
+                    "claim_text": claim["text"],
+                    "status": verification.status.value,
+                    "rationale": verification.rationale,
+                    "evidence_ids": verification.evidence_ids,
+                })
+
+        except SemanticVerifierError as exc:
+            raise RAGError(
+                "Semantic claim verification failed."
+            ) from exc
 
         # Collect validated citations in their original order.
         unique_cited_ids = list(dict.fromkeys(
@@ -142,4 +204,5 @@ Write an evidence-based answer with citations.
             "answer": generated_answer,
             "citations": valid_citations,
             "evidence_count": len(results),
+            "claims": verification_results,
         }
