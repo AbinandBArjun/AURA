@@ -38,3 +38,6 @@ backend/evaluation/results/*
 # Evaluation outputs
 backend/evaluation/results/*
 !backend/evaluation/results/retrieval_benchmark_results.json
+
+# TypeScript build artifacts
+*.tsbuildinfo

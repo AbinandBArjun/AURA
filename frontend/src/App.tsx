@@ -1,38 +1,67 @@
-import { useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-type Health = { status: string; service: string };
+import AppLayout from "./components/layout/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import PlaceholderPage from "./pages/PlaceholderPage";
 
 export default function App() {
-  const [health, setHealth] = useState<Health | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    fetch("http://localhost:8000/api/v1/health")
-      .then((r) => {
-        if (!r.ok) throw new Error("Backend returned an error");
-        return r.json();
-      })
-      .then(setHealth)
-      .catch((e: Error) => setError(e.message));
-  }, []);
-
   return (
-    <main className="shell">
-      <header className="topbar"><span className="brand">AURA</span><span>Research Intelligence</span></header>
-      <section className="hero">
-        <p className="eyebrow">AUTONOMOUS RESEARCH PLATFORM</p>
-        <h1>Turn information into<br />evidence-backed intelligence.</h1>
-        <p className="intro">Upload research documents, investigate questions and produce reports with traceable sources.</p>
-        <div className="status">
-          <strong>Backend status</strong>
-          {health ? <span className="ok">● {health.status}</span> : error ? <span className="bad">● {error}</span> : <span>Checking…</span>}
-        </div>
-      </section>
-      <section className="grid">
-        <article><h2>Document workspace</h2><p>Document ingestion and indexing will be implemented in the next milestone.</p></article>
-        <article><h2>Research runs</h2><p>LangGraph planning, evidence retrieval and report generation will appear here.</p></article>
-        <article><h2>Evaluation</h2><p>Retrieval quality, citation support, faithfulness, latency and cost will be measured.</p></article>
-      </section>
-    </main>
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Dashboard />} />
+
+        <Route
+          path="/documents"
+          element={
+            <PlaceholderPage
+              title="Document Workspace"
+              description="Manage and organize your research documents."
+            />
+          }
+        />
+
+        <Route
+          path="/search"
+          element={
+            <PlaceholderPage
+              title="Knowledge Search"
+              description="Search your indexed knowledge base."
+            />
+          }
+        />
+
+        <Route
+          path="/research"
+          element={
+            <PlaceholderPage
+              title="Research Agents"
+              description="Execute autonomous, evidence-grounded research."
+            />
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <PlaceholderPage
+              title="Research Reports"
+              description="Explore generated research reports and citations."
+            />
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <PlaceholderPage
+              title="Analytics"
+              description="Monitor research and retrieval performance."
+            />
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   );
 }
