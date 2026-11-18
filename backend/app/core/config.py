@@ -24,6 +24,10 @@ class Settings(BaseSettings):
         "sentence-transformers/all-MiniLM-L6-v2"
     )
 
+    development_user_email: str = "developer@aura.local"
+    development_user_name: str = "AURA Developer"
+    development_workspace_name: str = "AURA Development Workspace"
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
