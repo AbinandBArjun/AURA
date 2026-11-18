@@ -1,14 +1,15 @@
 from pathlib import Path
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_workspace
 from app.db.session import get_db
 from app.chunking.section_classifier import SectionClassifier
 from app.chunking.text_chunker import TextChunker
 from app.models import Document, DocumentPage, DocumentChunk, Workspace
+from app.schemas.document import DocumentResponse
 from app.services.document_indexer import (
     DocumentIndexer,
     DocumentIndexingError,
@@ -28,85 +29,92 @@ from app.services.pdf_extractor import (
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
-@router.post("/upload", status_code=status.HTTP_201_CREATED)
-async def upload_document(
-    workspace_id: int,
-    file: UploadFile = File(...),
+@router.get("", response_model=list[DocumentResponse])
+def list_documents(
+    workspace: Workspace = Depends(get_current_workspace),
     db: Session = Depends(get_db),
 ):
-    # Confirm workspace exists.
-    workspace = db.get(Workspace, workspace_id)
+    return db.scalars(
+        select(Document)
+        .where(Document.workspace_id == workspace.id)
+        .order_by(Document.created_at.desc(), Document.id.desc())
+    ).all()
 
-    if workspace is None:
-        raise HTTPException(404, "Workspace not found.")
 
-    # Validate extension.
+@router.post(
+    "/upload",
+    response_model=DocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_document(
+    file: UploadFile = File(...),
+    workspace: Workspace = Depends(get_current_workspace),
+    db: Session = Depends(get_db),
+):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Only PDF files are accepted.")
 
-    if file.content_type not in ("application/pdf", "application/octet-stream"):
+    if file.content_type not in (
+        "application/pdf",
+        "application/octet-stream",
+    ):
         raise HTTPException(400, "Invalid content type.")
 
-    # Read at most 20 MB + 1 byte to detect oversized files.
-    content = await file.read(MAX_FILE_SIZE + 1)
-
-    if not content:
-        raise HTTPException(400, "Uploaded file is empty.")
-
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(413, "PDF exceeds the 20 MB limit.")
-
-    if not content.startswith(b"%PDF-"):
-        raise HTTPException(400, "Invalid PDF signature.")
-
-    checksum = calculate_sha256(content)
-
-    # Prevent duplicate documents within the same workspace.
-    existing = db.scalar(
-        select(Document).where(
-            Document.workspace_id == workspace_id,
-            Document.checksum_sha256 == checksum,
-        )
-    )
-
-    if existing:
-        raise HTTPException(409, "This PDF already exists in this workspace.")
-
-    storage_key = None
-
     try:
-        storage_key, saved_checksum = save_pdf(content)
+        content = await file.read(MAX_FILE_SIZE + 1)
 
-        document = Document(
-            workspace_id=workspace_id,
-            filename=file.filename,
-            content_type="application/pdf",
-            size_bytes=len(content),
-            checksum_sha256=saved_checksum,
-            storage_key=storage_key,
-            status="uploaded",
+        if not content:
+            raise HTTPException(400, "Uploaded file is empty.")
+
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(413, "PDF exceeds the 20 MB limit.")
+
+        if not content.startswith(b"%PDF-"):
+            raise HTTPException(400, "Invalid PDF signature.")
+
+        checksum = calculate_sha256(content)
+
+        existing = db.scalar(
+            select(Document).where(
+                Document.workspace_id == workspace.id,
+                Document.checksum_sha256 == checksum,
+            )
         )
 
-        db.add(document)
-        db.commit()
-        db.refresh(document)
+        if existing:
+            raise HTTPException(
+                409,
+                "This PDF already exists in this workspace.",
+            )
 
-        return {
-            "id": document.id,
-            "workspace_id": document.workspace_id,
-            "filename": document.filename,
-            "size_bytes": document.size_bytes,
-            "status": document.status,
-            "checksum_sha256": document.checksum_sha256,
-        }
+        storage_key = None
 
-    except Exception:
-        db.rollback()
+        try:
+            storage_key, saved_checksum = save_pdf(content)
 
-        if storage_key:
-            delete_pdf(storage_key)
+            document = Document(
+                workspace_id=workspace.id,
+                filename=file.filename,
+                content_type="application/pdf",
+                size_bytes=len(content),
+                checksum_sha256=saved_checksum,
+                storage_key=storage_key,
+                status="uploaded",
+            )
 
-        raise
+            db.add(document)
+            db.commit()
+            db.refresh(document)
+
+            return document
+
+        except Exception:
+            db.rollback()
+
+            if storage_key:
+                delete_pdf(storage_key)
+
+            raise
 
     finally:
         await file.close()
@@ -115,14 +123,19 @@ async def upload_document(
 @router.post("/{document_id}/process")
 def process_document(
     document_id: int,
+    workspace: Workspace = Depends(get_current_workspace),
     db: Session = Depends(get_db),
 ):
-    document = db.get(Document, document_id)
+    document = db.scalar(
+        select(Document).where(
+            Document.id == document_id,
+            Document.workspace_id == workspace.id,
+        )
+    )
 
     if document is None:
         raise HTTPException(404, "Document not found.")
 
-    # Resolve and validate the stored file path.
     upload_root = UPLOAD_DIR.resolve()
     file_path = (upload_root / document.storage_key).resolve()
 
@@ -189,9 +202,9 @@ def process_document(
                 )
             )
 
-        # 6. Update extraction status.
         document.extraction_error = None
 
+        # 6. Handle PDFs without extractable text.
         if result["total_characters"] == 0:
             document.status = "needs_ocr"
             db.commit()
@@ -237,15 +250,23 @@ def process_document(
         except Exception as exc:
             db.rollback()
 
-            document = db.get(Document, document_id)
+            document = db.scalar(
+                select(Document).where(
+                    Document.id == document_id,
+                    Document.workspace_id == workspace.id,
+                )
+            )
+
             document.status = "index_failed"
             document.extraction_error = str(exc)
             db.commit()
 
             raise HTTPException(
                 status_code=503,
-                detail=f"Document extraction succeeded, "
-                       f"but vector indexing failed: {exc}",
+                detail=(
+                    "Document extraction succeeded, "
+                    f"but vector indexing failed: {exc}"
+                ),
             )
 
         return {
@@ -256,13 +277,21 @@ def process_document(
             "total_characters": result["total_characters"],
             "chunk_count": len(chunks),
             "indexed_count": indexed_count,
-            "message": "PDF extraction, chunking, and vector indexing completed.",
+            "message": (
+                "PDF extraction, chunking, and vector indexing completed."
+            ),
         }
 
     except PDFExtractionError as exc:
         db.rollback()
 
-        document = db.get(Document, document_id)
+        document = db.scalar(
+            select(Document).where(
+                Document.id == document_id,
+                Document.workspace_id == workspace.id,
+            )
+        )
+
         document.status = "failed"
         document.extraction_error = str(exc)
         db.commit()
@@ -271,6 +300,9 @@ def process_document(
             status_code=422,
             detail=f"PDF extraction failed: {exc}",
         )
+
+    except HTTPException:
+        raise
 
     except Exception:
         db.rollback()

@@ -101,3 +101,15 @@ def test_workspace(db_session):
 
     return workspace
 
+
+@pytest.fixture
+def current_workspace(client, test_workspace):
+    from app.api.dependencies import get_current_workspace
+
+    app.dependency_overrides[get_current_workspace] = (
+        lambda: test_workspace
+    )
+
+    yield test_workspace
+
+    app.dependency_overrides.pop(get_current_workspace, None)

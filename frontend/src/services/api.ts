@@ -1,4 +1,9 @@
-import type { HealthResponse } from "../types/api";
+import type {
+  DocumentProcessResponse,
+  DocumentResponse,
+  HealthResponse,
+  WorkspaceResponse,
+} from "../types/api";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ??
@@ -15,14 +20,18 @@ export class ApiError extends Error {
   }
 }
 
-async function apiRequest<T>(endpoint: string): Promise<T> {
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
   let response: Response;
 
   try {
     response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: "GET",
+      ...options,
       headers: {
         Accept: "application/json",
+        ...options.headers,
       },
     });
   } catch {
@@ -33,10 +42,16 @@ async function apiRequest<T>(endpoint: string): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new ApiError(
-      `Backend request failed with status ${response.status}.`,
-      response.status
-    );
+    const payload = await response
+      .json()
+      .catch(() => null) as { detail?: unknown } | null;
+
+    const message =
+      typeof payload?.detail === "string"
+        ? payload.detail
+        : `Backend request failed with status ${response.status}.`;
+
+    throw new ApiError(message, response.status);
   }
 
   return response.json() as Promise<T>;
@@ -44,4 +59,33 @@ async function apiRequest<T>(endpoint: string): Promise<T> {
 
 export function getHealth(): Promise<HealthResponse> {
   return apiRequest<HealthResponse>("/health");
+}
+
+export function getCurrentWorkspace(): Promise<WorkspaceResponse> {
+  return apiRequest<WorkspaceResponse>("/workspaces/current");
+}
+
+export function getDocuments(): Promise<DocumentResponse[]> {
+  return apiRequest<DocumentResponse[]>("/documents");
+}
+
+export function uploadDocument(file: File): Promise<DocumentResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiRequest<DocumentResponse>("/documents/upload", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export function processDocument(
+  documentId: number
+): Promise<DocumentProcessResponse> {
+  return apiRequest<DocumentProcessResponse>(
+    `/documents/${documentId}/process`,
+    {
+      method: "POST",
+    }
+  );
 }

@@ -36,7 +36,7 @@ def create_test_pdf(path):
 def test_document_processing_and_reprocessing(
     client,
     db_session,
-    test_workspace,
+    current_workspace,
     tmp_path,
     monkeypatch,
 ):
@@ -51,7 +51,7 @@ def test_document_processing_and_reprocessing(
     create_test_pdf(pdf_path)
 
     document = Document(
-        workspace_id=test_workspace.id,
+        workspace_id=current_workspace.id,
         filename="integration-test.pdf",
         content_type="application/pdf",
         size_bytes=pdf_path.stat().st_size,
@@ -131,7 +131,7 @@ def test_document_processing_and_reprocessing(
 def test_chunking_failure_preserves_existing_data(
     client,
     db_session,
-    test_workspace,
+    current_workspace,
     tmp_path,
     monkeypatch,
 ):
@@ -145,7 +145,7 @@ def test_chunking_failure_preserves_existing_data(
     create_test_pdf(pdf_path)
 
     document = Document(
-        workspace_id=test_workspace.id,
+        workspace_id=current_workspace.id,
         filename="rollback-test.pdf",
         content_type="application/pdf",
         size_bytes=pdf_path.stat().st_size,

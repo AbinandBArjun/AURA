@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import Documents from "./pages/Documents";
 import PlaceholderPage from "./pages/PlaceholderPage";
 
 export default function App() {
@@ -9,16 +10,7 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
-
-        <Route
-          path="/documents"
-          element={
-            <PlaceholderPage
-              title="Document Workspace"
-              description="Manage and organize your research documents."
-            />
-          }
-        />
+        <Route path="/documents" element={<Documents />} />
 
         <Route
           path="/search"
