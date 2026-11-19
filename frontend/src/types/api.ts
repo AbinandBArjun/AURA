@@ -35,3 +35,25 @@ export interface DocumentProcessResponse {
   indexed_count: number;
   message: string;
 }
+
+
+export interface SearchRequest {
+  query: string;
+  limit: number;
+}
+
+export interface SearchResult {
+  document_id: number;
+  filename: string;
+  chunk_id: number;
+  text: string;
+  page_start: number;
+  page_end: number;
+  score: number;
+}
+
+export interface SearchResponse {
+  query: string;
+  results: SearchResult[];
+  result_count: number;
+}

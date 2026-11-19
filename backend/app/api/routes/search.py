@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_workspace
 from app.db.session import get_db
+from app.models import Workspace
 from app.schemas.search import SearchRequest, SearchResponse
 from app.services.search_service import SearchService
 
@@ -11,6 +13,7 @@ router = APIRouter(prefix="/search", tags=["Search"])
 @router.post("", response_model=SearchResponse)
 def semantic_search(
     request: SearchRequest,
+    workspace: Workspace = Depends(get_current_workspace),
     db: Session = Depends(get_db),
 ):
     try:
@@ -18,7 +21,7 @@ def semantic_search(
 
         results = service.search(
             db=db,
-            workspace_id=request.workspace_id,
+            workspace_id=workspace.id,
             query=request.query,
             limit=request.limit,
         )
@@ -34,4 +37,3 @@ def semantic_search(
             status_code=404,
             detail=str(exc),
         )
-

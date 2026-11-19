@@ -83,57 +83,46 @@ def test_search_service_rejects_missing_workspace(db_session):
         assert str(exc) == "Workspace not found."
 
 
-def test_search_api_success(db_session, test_workspace):
-    from app.db.session import get_db
+def test_search_api_success(client, current_workspace):
+    with patch(
+        "app.api.routes.search.SearchService"
+    ) as mock_service:
 
-    def override_get_db():
-        yield db_session
+        mock_service.return_value.search.return_value = [
+            {
+                "document_id": 1,
+                "filename": "test-paper.pdf",
+                "chunk_id": 10,
+                "text": "Research findings about RAG.",
+                "page_start": 1,
+                "page_end": 2,
+                "score": 0.85,
+            }
+        ]
 
-    app.dependency_overrides[get_db] = override_get_db
+        response = client.post(
+            "/api/v1/search",
+            json={
+                "query": "Research findings",
+                "limit": 5,
+            },
+        )
 
-    try:
-        with patch(
-            "app.api.routes.search.SearchService"
-        ) as mock_service:
+    assert response.status_code == 200
+    assert response.json()["result_count"] == 1
+    assert response.json()["results"][0]["filename"] == "test-paper.pdf"
 
-            mock_service.return_value.search.return_value = [
-                {
-                    "document_id": 1,
-                    "filename": "test-paper.pdf",
-                    "chunk_id": 10,
-                    "text": "Research findings about RAG.",
-                    "page_start": 1,
-                    "page_end": 2,
-                    "score": 0.85,
-                }
-            ]
+    search_call = mock_service.return_value.search.call_args
 
-            client = TestClient(app)
-
-            response = client.post(
-                "/api/v1/search",
-                json={
-                    "workspace_id": test_workspace.id,
-                    "query": "Research findings",
-                    "limit": 5,
-                },
-            )
-
-        assert response.status_code == 200
-        assert response.json()["result_count"] == 1
-        assert response.json()["results"][0]["filename"] == "test-paper.pdf"
-
-    finally:
-        app.dependency_overrides.pop(get_db, None)
+    assert search_call.kwargs["workspace_id"] == current_workspace.id
+    assert search_call.kwargs["query"] == "Research findings"
+    assert search_call.kwargs["limit"] == 5
 
 
-def test_search_api_rejects_invalid_request():
-    client = TestClient(app)
-
+def test_search_api_rejects_invalid_request(client):
     response = client.post(
         "/api/v1/search",
         json={
-            "workspace_id": 0,
             "query": "",
             "limit": 100,
         },

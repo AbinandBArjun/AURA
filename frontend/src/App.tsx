@@ -4,6 +4,7 @@ import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import Search from "./pages/Search";
 
 export default function App() {
   return (
@@ -12,15 +13,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/documents" element={<Documents />} />
 
-        <Route
-          path="/search"
-          element={
-            <PlaceholderPage
-              title="Knowledge Search"
-              description="Search your indexed knowledge base."
-            />
-          }
-        />
+        <Route path="/search" element={<Search />} />
 
         <Route
           path="/research"

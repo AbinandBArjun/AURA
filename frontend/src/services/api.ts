@@ -2,6 +2,7 @@ import type {
   DocumentProcessResponse,
   DocumentResponse,
   HealthResponse,
+  SearchResponse,
   WorkspaceResponse,
 } from "../types/api";
 
@@ -88,4 +89,18 @@ export function processDocument(
       method: "POST",
     }
   );
+}
+
+
+export function searchKnowledge(
+  query: string,
+  limit = 5
+): Promise<SearchResponse> {
+  return apiRequest<SearchResponse>("/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query, limit }),
+  });
 }
