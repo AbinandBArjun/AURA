@@ -130,6 +130,72 @@ def test_model_insufficient_evidence_response(sample_results):
     assert result["claims"] == []
 
 
+def test_rag_preserves_valid_answer_before_fallback_marker(sample_results):
+    answer = (
+        "Section-aware chunking improved retrieval accuracy "
+        "from 71% to 84% [S1].\n\n"
+        "INSUFFICIENT_EVIDENCE\n\n"
+        "The provided evidence does not contain enough information."
+    )
+
+    verifier = FakeSemanticVerifier()
+
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(response=answer),
+        verifier,
+    )
+
+    result = service.answer(1, "What were the research findings?")
+
+    assert result["answer"] == (
+        "Section-aware chunking improved retrieval accuracy "
+        "from 71% to 84% [S1]."
+    )
+    assert len(result["citations"]) == 1
+    assert result["citations"][0]["source_id"] == "S1"
+    assert len(result["claims"]) == 1
+    assert result["claims"][0]["status"] == "supported"
+
+
+def test_rag_rejects_fallback_without_valid_answer_prefix(sample_results):
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(
+            response=(
+                "INSUFFICIENT_EVIDENCE\n\n"
+                "There is not enough information."
+            )
+        ),
+        FakeSemanticVerifier(),
+    )
+
+    result = service.answer(1, "What is RAG?")
+
+    assert result["answer"] == RAGService.INSUFFICIENT_EVIDENCE
+    assert result["citations"] == []
+    assert result["claims"] == []
+
+
+def test_rag_rejects_inline_fallback_marker(sample_results):
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(
+            response=(
+                "RAG combines retrieval and generation [S1]. "
+                "INSUFFICIENT_EVIDENCE"
+            )
+        ),
+        FakeSemanticVerifier(),
+    )
+
+    result = service.answer(1, "What is RAG?")
+
+    assert result["answer"] == RAGService.INSUFFICIENT_EVIDENCE
+    assert result["citations"] == []
+    assert result["claims"] == []
+
+
 def test_uncited_model_response_is_rejected(sample_results):
     service = RAGService(
         FakeSearchService(sample_results),
@@ -266,7 +332,7 @@ def test_rag_verifier_receives_only_claim_citations(sample_results):
     ]
 
 
-def test_rag_preserves_answer_when_claim_is_contradicted(sample_results):
+def test_rag_excludes_contradicted_claim_from_answer(sample_results):
     service = RAGService(
         FakeSearchService(sample_results),
         FakeOllamaClient(response="RAG combines retrieval and generation [S1]."),
@@ -275,7 +341,8 @@ def test_rag_preserves_answer_when_claim_is_contradicted(sample_results):
 
     result = service.answer(1, "What is RAG?")
 
-    assert result["answer"] == "RAG combines retrieval and generation [S1]."
+    assert result["answer"] == RAGService.INSUFFICIENT_EVIDENCE
+    assert result["citations"] == []
     assert result["claims"][0]["status"] == "contradicted"
 
 
@@ -348,3 +415,72 @@ def test_rag_response_schema_accepts_semantic_claims(sample_results):
     assert response.claims[0].status == "supported"
     assert response.claims[0].claim_id == "C1"
     assert response.model_dump()["claims"][0]["evidence_ids"] == ["S1"]
+
+
+
+def test_rag_preserves_original_source_id_when_only_second_source_is_cited(
+    sample_results,
+):
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(
+            response="Retrieved evidence improves answer relevance [S2]."
+        ),
+        FakeSemanticVerifier(),
+    )
+
+    result = service.answer(1, "How can retrieved evidence help?")
+
+    assert len(result["citations"]) == 1
+    assert result["citations"][0]["source_id"] == "S2"
+    assert result["citations"][0]["filename"] == "technical_report.pdf"
+    assert result["claims"][0]["evidence_ids"] == ["S2"]
+
+
+
+def test_extract_claims_from_numbered_markdown_list():
+    answer = (
+        "1. Accuracy improved from 71% to 84% [S1].\n"
+        "2. Hallucinated answers decreased by 18% [S2]."
+    )
+
+    claims = extract_claims_from_answer(answer)
+
+    assert len(claims) == 2
+    assert claims[0]["citation_ids"] == ["S1"]
+    assert claims[1]["citation_ids"] == ["S2"]
+    assert claims[0]["text"].startswith("Accuracy")
+    assert claims[1]["text"].startswith("Hallucinated")
+
+
+def test_extract_claims_splits_multiple_sentences_in_list_item():
+    answer = (
+        "1. The paper evaluates three chunking strategies. "
+        "Accuracy improved from 71% to 84% [S1]."
+    )
+
+    claims = extract_claims_from_answer(answer)
+
+    assert len(claims) == 2
+    assert claims[0]["citation_ids"] == []
+    assert claims[1]["citation_ids"] == ["S1"]
+
+
+def test_rag_rejects_uncited_intro_and_summary(sample_results):
+    answer = (
+        "The research paper reports several findings.\n\n"
+        "1. Accuracy improved from 71% to 84% [S1].\n\n"
+        "In conclusion, the approach is effective."
+    )
+
+    service = RAGService(
+        FakeSearchService(sample_results),
+        FakeOllamaClient(response=answer),
+        FakeSemanticVerifier(),
+    )
+
+    result = service.answer(1, "What were the research findings?")
+
+    assert result["answer"] == RAGService.INSUFFICIENT_EVIDENCE
+    assert result["citations"] == []
+    assert result["claims"] == []

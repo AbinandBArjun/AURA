@@ -2,6 +2,7 @@ import type {
   DocumentProcessResponse,
   DocumentResponse,
   HealthResponse,
+  RAGResponse,
   SearchResponse,
   WorkspaceResponse,
 } from "../types/api";
@@ -102,5 +103,19 @@ export function searchKnowledge(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ query, limit }),
+  });
+}
+
+
+export function generateAnswer(
+  question: string,
+  limit = 5
+): Promise<RAGResponse> {
+  return apiRequest<RAGResponse>("/rag/answer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ question, limit }),
   });
 }

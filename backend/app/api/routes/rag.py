@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.api.dependencies import get_current_workspace
+from app.models import Workspace
 from app.schemas.rag import RAGRequest, RAGResponse
 from app.services.rag_service import RAGService, RAGError
 from app.services.search_service import SearchService
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/rag", tags=["RAG"])
 @router.post("/answer", response_model=RAGResponse)
 def generate_answer(
     request: RAGRequest,
-    db: Session = Depends(get_db),
+    workspace: Workspace = Depends(get_current_workspace),
 ):
     try:
         service = RAGService(
@@ -21,7 +21,7 @@ def generate_answer(
         )
 
         result = service.answer(
-            workspace_id=request.workspace_id,
+            workspace_id=workspace.id,
             question=request.question,
             limit=request.limit,
         )
@@ -29,7 +29,13 @@ def generate_answer(
         return result
 
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        )
 
     except RAGError as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        )

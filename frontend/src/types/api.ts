@@ -57,3 +57,41 @@ export interface SearchResponse {
   results: SearchResult[];
   result_count: number;
 }
+
+
+export interface RAGRequest {
+  question: string;
+  limit: number;
+}
+
+export interface Citation {
+  source_id: string;
+  document_id: number;
+  filename: string;
+  chunk_id: number;
+  page_start: number;
+  page_end: number;
+  score: number;
+}
+
+export type ClaimVerificationStatus =
+  | "supported"
+  | "partially_supported"
+  | "contradicted"
+  | "insufficient_evidence";
+
+export interface ClaimVerification {
+  claim_id: string;
+  claim_text: string;
+  status: ClaimVerificationStatus;
+  rationale: string;
+  evidence_ids: string[];
+}
+
+export interface RAGResponse {
+  question: string;
+  answer: string;
+  citations: Citation[];
+  evidence_count: number;
+  claims: ClaimVerification[];
+}

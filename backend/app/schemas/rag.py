@@ -1,15 +1,17 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RAGRequest(BaseModel):
-    workspace_id: int = Field(gt=0)
+    model_config = ConfigDict(extra="forbid")
+
     question: str = Field(min_length=1, max_length=2000)
     limit: int = Field(default=5, ge=1, le=20)
 
 
 class Citation(BaseModel):
+    source_id: str
     document_id: int
     filename: str
     chunk_id: int

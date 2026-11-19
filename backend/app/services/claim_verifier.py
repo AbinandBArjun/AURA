@@ -110,15 +110,26 @@ def extract_claims_from_answer(answer: str) -> list[dict]:
     """
     Convert answer sentences into claim objects with citation IDs.
 
-    This is an initial deterministic parser, not semantic claim
-    extraction. More advanced LLM-based atomic claim extraction
-    will be introduced separately.
+    Supports Markdown numbered and bulleted lists while retaining
+    strict sentence-level citation validation.
     """
 
     if not isinstance(answer, str) or not answer.strip():
         raise ClaimCitationError("Answer cannot be empty.")
 
-    sentences = re.split(r"(?<=[.!?])\s+", answer.strip())
+    # Remove Markdown list markers at the beginning of lines.
+    # This prevents numbered-list periods from becoming claims.
+    normalized_answer = re.sub(
+        r"(?m)^[ \t]*(?:\d+[.)]|[-*+])[ \t]+",
+        "",
+        answer.strip(),
+    )
+
+    # Split individual sentences, not entire list items.
+    sentences = re.split(
+        r"(?<=[.!?])\s+",
+        normalized_answer,
+    )
 
     claims = []
 
@@ -128,7 +139,10 @@ def extract_claims_from_answer(answer: str) -> list[dict]:
         if not sentence:
             continue
 
-        citation_ids = re.findall(r"\[(S\d+)\]", sentence)
+        citation_ids = re.findall(
+            r"\[(S\d+)\]",
+            sentence,
+        )
 
         claims.append({
             "claim_id": f"C{index}",

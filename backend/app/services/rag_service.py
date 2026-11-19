@@ -24,17 +24,43 @@ class RAGService:
     )
 
     SYSTEM_PROMPT = """
-You are AURA, an evidence-grounded research assistant.
+You are AURA, a strict evidence-grounded research assistant.
 
-Rules:
-1. Answer using only the supplied evidence.
-2. Never invent facts, statistics, page numbers, or sources.
-3. Cite every substantive factual claim using the supplied citation IDs,
-   for example [S1] or [S2].
-4. If the evidence does not adequately answer the question, say:
-   "INSUFFICIENT_EVIDENCE"
-5. If sources contradict each other, explicitly identify the disagreement.
-6. Be precise and distinguish evidence from interpretation.
+CRITICAL: CITATIONS ARE MANDATORY.
+
+You must cite every factual sentence using the source IDs
+provided in the evidence.
+
+STRICT OUTPUT RULES:
+
+1. Output factual bullet points only.
+2. Every bullet must contain at least one complete sentence.
+3. EVERY factual sentence must contain a citation.
+4. Place the citation immediately before the final punctuation.
+5. Never output a factual sentence without a citation.
+6. Use only the supplied source IDs.
+7. Never invent citations or evidence.
+8. Do not write introductions, headings, or uncited summaries.
+9. Do not output commentary outside the bullet list.
+
+CORRECT FORMAT:
+- Section-aware chunking improved retrieval accuracy
+  from 71% to 84% [S1].
+
+INCORRECT FORMAT:
+- Section-aware chunking improved retrieval accuracy
+  from 71% to 84%.
+
+- Section-aware chunking improved retrieval accuracy
+  from 71% to 84%. [S1]
+
+If evidence is insufficient, return exactly:
+INSUFFICIENT_EVIDENCE
+
+A response containing even one uncited factual sentence
+is INVALID.
+
+Return only the answer.
 """
 
     def __init__(
@@ -82,6 +108,7 @@ Rules:
             citation_id = f"S{index}"
 
             citation_map[citation_id] = {
+                "source_id": citation_id,
                 "document_id": result["document_id"],
                 "filename": result["filename"],
                 "chunk_id": result["chunk_id"],
@@ -104,14 +131,52 @@ Evidence:
 
         evidence = "\n".join(evidence_sections)
 
+        valid_citation_ids = ", ".join(
+            f"[S{index}]"
+            for index in range(1, len(results) + 1)
+        )
+
         prompt = f"""
 Research question:
 {question}
 
-Available evidence:
+VALID CITATION IDS:
+{valid_citation_ids}
+
+AVAILABLE EVIDENCE:
 {evidence}
 
-Write an evidence-based answer with citations.
+TASK:
+Answer the research question using the available evidence.
+
+CITATION REQUIREMENTS — HIGHEST PRIORITY:
+
+1. Every factual sentence MUST contain a citation.
+2. Every bullet MUST contain at least one citation.
+3. Citations MUST appear before sentence-ending punctuation.
+4. Use only these valid IDs: {valid_citation_ids}
+5. Match every claim to the evidence that supports it.
+6. Never produce an uncited factual statement.
+
+REQUIRED FORMAT EXAMPLE:
+
+- A research finding supported by the first evidence source [S1].
+- Another finding supported by the second evidence source [S2].
+
+CONTENT TO COVER WHEN SUPPORTED:
+
+- Major research findings.
+- Quantitative results and comparisons.
+- Conclusions and recommendations.
+- Limitations and future work.
+
+Do not include introductions, headings, or summary paragraphs.
+
+If the evidence cannot adequately answer the question,
+return exactly:
+INSUFFICIENT_EVIDENCE
+
+Return only cited factual bullet points.
 """
 
         try:
@@ -123,7 +188,34 @@ Write an evidence-based answer with citations.
         except OllamaError as exc:
             raise RAGError(f"Answer generation failed: {exc}") from exc
 
-        if "INSUFFICIENT_EVIDENCE" in generated_answer.upper():
+        generated_answer = generated_answer.strip()
+
+        fallback_pattern = (
+            r"(?im)^[ \t]*INSUFFICIENT_EVIDENCE[ \t]*[.!]?[ \t]*$"
+        )
+
+        fallback_match = re.search(
+            fallback_pattern,
+            generated_answer,
+        )
+
+        if fallback_match:
+            answer_prefix = generated_answer[:fallback_match.start()].strip()
+
+            if not answer_prefix:
+                return {
+                    "question": question,
+                    "answer": self.INSUFFICIENT_EVIDENCE,
+                    "citations": [],
+                    "evidence_count": len(results),
+                    "claims": [],
+                }
+
+            # Discard the fallback marker and everything after it.
+            generated_answer = answer_prefix
+
+        elif "INSUFFICIENT_EVIDENCE" in generated_answer.upper():
+            # Reject inline or malformed fallback markers.
             return {
                 "question": question,
                 "answer": self.INSUFFICIENT_EVIDENCE,
@@ -187,10 +279,24 @@ Write an evidence-based answer with citations.
                 "Semantic claim verification failed."
             ) from exc
 
-        # Collect validated citations in their original order.
+        # Only semantically supported claims may appear in the answer.
+        supported_claims = [
+            claim
+            for claim, verification in zip(
+                validated_claims,
+                verification_results,
+            )
+            if verification["status"] == "supported"
+        ]
+
+        supported_answer = "\n".join(
+            claim["text"] for claim in supported_claims
+        )
+
+        # Collect citations only from claims that passed verification.
         unique_cited_ids = list(dict.fromkeys(
             citation["citation_id"]
-            for claim in validated_claims
+            for claim in supported_claims
             for citation in claim["citations"]
         ))
 
@@ -201,8 +307,13 @@ Write an evidence-based answer with citations.
 
         return {
             "question": question,
-            "answer": generated_answer,
+            "answer": (
+                supported_answer
+                if supported_answer
+                else self.INSUFFICIENT_EVIDENCE
+            ),
             "citations": valid_citations,
             "evidence_count": len(results),
+            # Preserve every verification result for transparency.
             "claims": verification_results,
         }
