@@ -6,6 +6,7 @@ from app.api.routes.documents import router as documents_router
 from app.api.routes.search import router as search_router
 from app.api.routes import rag
 from app.api.routes import research
+from app.api.routes import conversations
 from app.api.routes.workspaces import router as workspaces_router
 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.include_router(documents_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")
 app.include_router(rag.router, prefix="/api/v1")
 app.include_router(research.router, prefix="/api/v1")
+app.include_router(conversations.router, prefix="/api/v1")
 app.include_router(workspaces_router, prefix="/api/v1")
 
 

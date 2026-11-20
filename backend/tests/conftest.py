@@ -17,6 +17,8 @@ from app.models import (
     DocumentPage,
     DocumentChunk,
     ResearchRun,
+    Conversation,
+    ConversationMessage,
 )
 
 

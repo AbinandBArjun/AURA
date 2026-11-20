@@ -1,4 +1,9 @@
 import type {
+  ConversationCreateRequest,
+  ConversationDetailResponse,
+  ConversationMessageCreateRequest,
+  ConversationResponse,
+  ConversationTurnResponse,
   DocumentProcessResponse,
   DocumentResponse,
   HealthResponse,
@@ -118,4 +123,54 @@ export function generateAnswer(
     },
     body: JSON.stringify({ question, limit }),
   });
+}
+
+export function getConversations(): Promise<ConversationResponse[]> {
+  return apiRequest<ConversationResponse[]>("/conversations");
+}
+
+export function createConversation(
+  title?: string
+): Promise<ConversationResponse> {
+  const body: ConversationCreateRequest = title
+    ? { title }
+    : {};
+
+  return apiRequest<ConversationResponse>("/conversations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+export function getConversation(
+  conversationId: number
+): Promise<ConversationDetailResponse> {
+  return apiRequest<ConversationDetailResponse>(
+    `/conversations/${conversationId}`
+  );
+}
+
+export function sendConversationMessage(
+  conversationId: number,
+  content: string,
+  limit = 5
+): Promise<ConversationTurnResponse> {
+  const body: ConversationMessageCreateRequest = {
+    content,
+    limit,
+  };
+
+  return apiRequest<ConversationTurnResponse>(
+    `/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
 }

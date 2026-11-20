@@ -95,3 +95,41 @@ export interface RAGResponse {
   evidence_count: number;
   claims: ClaimVerification[];
 }
+
+export interface ConversationCreateRequest {
+  title?: string | null;
+}
+
+export interface ConversationMessageCreateRequest {
+  content: string;
+  limit: number;
+}
+
+export interface ConversationMessageResponse {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  citations: Citation[];
+  created_at: string;
+}
+
+export interface ConversationResponse {
+  id: number;
+  workspace_id: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationDetailResponse
+  extends ConversationResponse {
+  messages: ConversationMessageResponse[];
+}
+
+export interface ConversationTurnResponse {
+  conversation_id: number;
+  user_message: ConversationMessageResponse;
+  assistant_message: ConversationMessageResponse;
+  evidence_count: number;
+}
+

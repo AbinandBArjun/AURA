@@ -1,9 +1,10 @@
-import {
+﻿import {
   Activity,
   BrainCircuit,
   FileText,
   FolderOpen,
   LayoutDashboard,
+  MessageSquare,
   Search,
   X,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const navigation = [
     label: "WORKSPACE",
     items: [
       { name: "Documents", path: "/documents", icon: FolderOpen },
+      { name: "Conversations", path: "/conversations", icon: MessageSquare },
       { name: "Knowledge Search", path: "/search", icon: Search },
     ],
   },
@@ -112,3 +114,4 @@ export default function Sidebar({
     </>
   );
 }
+

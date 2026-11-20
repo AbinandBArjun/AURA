@@ -1,8 +1,9 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+﻿import { Navigate, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
+import Conversations from "./pages/Conversations";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import Search from "./pages/Search";
 
@@ -12,6 +13,7 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/documents" element={<Documents />} />
+        <Route path="/conversations" element={<Conversations />} />
 
         <Route path="/search" element={<Search />} />
 
@@ -50,3 +52,4 @@ export default function App() {
     </Routes>
   );
 }
+

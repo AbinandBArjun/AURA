@@ -21,3 +21,7 @@ class Workspace(Base):
     research_runs: Mapped[list["ResearchRun"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
+    conversations: Mapped[list["Conversation"]] = relationship(
+        back_populates="workspace",
+        cascade="all, delete-orphan",
+    )
