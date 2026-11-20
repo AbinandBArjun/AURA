@@ -60,6 +60,7 @@ def test_search_service_returns_document_metadata(
             workspace_id=test_workspace.id,
             query="What are the research findings?",
             limit=5,
+            mode="hybrid_rerank",
         )
 
     assert len(results) == 1
@@ -186,6 +187,7 @@ def test_search_service_returns_bm25_results_without_dense_matches(
         workspace_id=test_workspace.id,
         query="artificial intelligence labor markets",
         limit=5,
+        mode="hybrid_rerank",
     )
 
     assert len(results) == 1
@@ -270,6 +272,7 @@ def test_search_service_uses_reranked_order(
         workspace_id=test_workspace.id,
         query="AI labor markets",
         limit=5,
+        mode="hybrid_rerank",
     )
 
     assert len(results) == 2
@@ -277,3 +280,64 @@ def test_search_service_uses_reranked_order(
     assert results[1]["chunk_id"] == 1
 
     reranker.rerank.assert_called_once()
+
+
+def test_search_service_defaults_to_hybrid_without_reranking(
+    db_session,
+    test_workspace,
+):
+    document = Document(
+        workspace_id=test_workspace.id,
+        filename="hybrid-default-paper.pdf",
+        content_type="application/pdf",
+        size_bytes=100,
+        checksum_sha256="hybrid-default-checksum",
+        storage_key="hybrid-default-paper.pdf",
+        status="processed",
+    )
+
+    db_session.add(document)
+    db_session.commit()
+    db_session.refresh(document)
+
+    dense_result = {
+        "document_id": document.id,
+        "chunk_id": 101,
+        "text": "Evidence about hybrid retrieval.",
+        "page_start": 1,
+        "page_end": 2,
+        "score": 0.85,
+    }
+
+    qdrant = MagicMock()
+    qdrant.search.return_value = [dense_result]
+
+    bm25 = MagicMock()
+    bm25.search.return_value = []
+
+    rrf = MagicMock()
+    rrf.fuse.return_value = [dense_result]
+
+    reranker = MagicMock()
+
+    service = SearchService(
+        qdrant_service=qdrant,
+        bm25_retriever=bm25,
+        rrf_fusion=rrf,
+        reranker=reranker,
+    )
+
+    results = service.search(
+        db=db_session,
+        workspace_id=test_workspace.id,
+        query="hybrid retrieval evidence",
+        limit=5,
+    )
+
+    assert len(results) == 1
+    assert results[0]["chunk_id"] == 101
+
+    qdrant.search.assert_called_once()
+    bm25.search.assert_called_once()
+    rrf.fuse.assert_called_once()
+    reranker.rerank.assert_not_called()

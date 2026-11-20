@@ -30,7 +30,7 @@ class SearchService:
         workspace_id: int = 0,
         query: str = "",
         limit: int = 5,
-        mode: str = "hybrid_rerank",
+        mode: str = "hybrid",
         candidate_pool_size: int | None = None,
     ) -> list[dict]:
         if not query or not query.strip():
