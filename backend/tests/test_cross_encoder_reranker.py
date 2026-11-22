@@ -93,3 +93,74 @@ def test_predict_receives_query_passage_pairs(
         "General AI information",
     )
     assert len(pairs) == 3
+
+@pytest.mark.parametrize(
+    "invalid_result",
+    [
+        {"chunk_id": 4},
+        {"chunk_id": 4, "text": None},
+        {"chunk_id": 4, "text": 123},
+        {"chunk_id": 4, "text": "   "},
+    ],
+)
+def test_rejects_invalid_passage_text(reranker, invalid_result):
+    with pytest.raises(ValueError, match="valid non-empty text"):
+        reranker.rerank("AI research", [invalid_result])
+
+
+def test_rejects_non_dictionary_result(reranker):
+    with pytest.raises(ValueError, match="result must be a dictionary"):
+        reranker.rerank("AI research", ["invalid passage"])
+
+
+def test_rejects_unexpected_number_of_scores(
+    reranker,
+    sample_results,
+    mock_model,
+):
+    mock_model.predict.return_value = [0.9]
+
+    with pytest.raises(ValueError, match="unexpected number of scores"):
+        reranker.rerank("AI research", sample_results)
+
+
+@pytest.mark.parametrize(
+    "invalid_score",
+    [
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+        "not-a-score",
+        None,
+    ],
+)
+def test_rejects_invalid_model_scores(
+    reranker,
+    sample_results,
+    mock_model,
+    invalid_score,
+):
+    mock_model.predict.return_value = [
+        0.9,
+        invalid_score,
+        0.5,
+    ]
+
+    with pytest.raises(ValueError, match="finite numeric scores"):
+        reranker.rerank("AI research", sample_results)
+
+
+def test_preserves_input_order_when_rerank_scores_are_equal(
+    reranker,
+    sample_results,
+    mock_model,
+):
+    mock_model.predict.return_value = [0.5, 0.5, 0.5]
+
+    results = reranker.rerank(
+        "AI research",
+        sample_results,
+        limit=3,
+    )
+
+    assert [item["chunk_id"] for item in results] == [1, 2, 3]

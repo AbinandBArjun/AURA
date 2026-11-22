@@ -1,3 +1,4 @@
+import math
 from typing import Any
 
 from sentence_transformers import CrossEncoder
@@ -47,6 +48,17 @@ class CrossEncoderReranker:
         if not results:
             return []
 
+        for result in results:
+            if not isinstance(result, dict):
+                raise ValueError("Each reranker result must be a dictionary.")
+
+            text = result.get("text")
+
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError(
+                    "Each reranker result must contain valid non-empty text."
+                )
+
         pairs = [
             (query, result["text"])
             for result in results
@@ -58,13 +70,42 @@ class CrossEncoderReranker:
             show_progress_bar=False,
         )
 
-        if len(scores) != len(results):
+        try:
+            score_count = len(scores)
+        except TypeError as exc:
+            raise ValueError(
+                "Reranker returned an unexpected number of scores."
+            ) from exc
+
+        if score_count != len(results):
             raise ValueError("Reranker returned an unexpected number of scores.")
+
+        validated_scores = []
+
+        for score in scores:
+            if isinstance(score, (str, bytes, bool)):
+                raise ValueError(
+                    "Reranker must return finite numeric scores."
+                )
+
+            try:
+                numeric_score = float(score)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValueError(
+                    "Reranker must return finite numeric scores."
+                ) from exc
+
+            if not math.isfinite(numeric_score):
+                raise ValueError(
+                    "Reranker must return finite numeric scores."
+                )
+
+            validated_scores.append(numeric_score)
 
         ranked_results = []
 
         for original_index, (result, score) in enumerate(
-            zip(results, scores)
+            zip(results, validated_scores)
         ):
             item = dict(result)
             item["rrf_score"] = result.get("rrf_score", result.get("score"))
