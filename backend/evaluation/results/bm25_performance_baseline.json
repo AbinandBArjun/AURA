@@ -1,0 +1,704 @@
+{
+  "benchmark": "AURA BM25 Performance Baseline",
+  "dataset_name": "AURA Retrieval Benchmark",
+  "dataset_version": "0.2",
+  "workspace_id": 1,
+  "query_count": 12,
+  "warmup_rounds": 3,
+  "measured_rounds": 30,
+  "top_k": 10,
+  "corpus": {
+    "document_count": 2,
+    "total_chunks": 50,
+    "retrievable_chunks": 37
+  },
+  "bm25_library_version": "0.2.2",
+  "results": {
+    "query_tokenization": {
+      "sample_count": 360,
+      "mean_ms": 0.005889998929989006,
+      "median_ms": 0.005500041879713535,
+      "p95_ms": 0.008300004992634058
+    },
+    "database_loading": {
+      "sample_count": 360,
+      "mean_ms": 1.2467538899121184,
+      "median_ms": 1.1998499976471066,
+      "p95_ms": 1.577500021085143
+    },
+    "corpus_tokenization": {
+      "sample_count": 360,
+      "mean_ms": 2.233418609992239,
+      "median_ms": 2.230049984063953,
+      "p95_ms": 2.430900000035763
+    },
+    "index_construction": {
+      "sample_count": 360,
+      "mean_ms": 2.410183888989397,
+      "median_ms": 2.3800500202924013,
+      "p95_ms": 2.5913999998010695
+    },
+    "scoring_and_ranking": {
+      "sample_count": 360,
+      "mean_ms": 0.16537416490286383,
+      "median_ms": 0.16464997315779328,
+      "p95_ms": 0.21319999359548092
+    },
+    "result_materialization": {
+      "sample_count": 360,
+      "mean_ms": 0.016634722932293598,
+      "median_ms": 0.01650000922381878,
+      "p95_ms": 0.01829996472224593
+    },
+    "total_profiled": {
+      "sample_count": 360,
+      "mean_ms": 6.080613888399158,
+      "median_ms": 6.01379998261109,
+      "p95_ms": 6.576899962965399
+    },
+    "production_search": {
+      "sample_count": 360,
+      "mean_ms": 6.1757749994285405,
+      "median_ms": 6.1104000196792185,
+      "p95_ms": 6.647199974395335
+    }
+  },
+  "per_query": {
+    "labor_001": {
+      "category": "labor",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.006096668463821213,
+          "median_ms": 0.005600013537332416,
+          "p95_ms": 0.008700008038431406
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.3248466770164669,
+          "median_ms": 1.27345000510104,
+          "p95_ms": 1.6878999886102974
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.195853334463512,
+          "median_ms": 2.2258000099100173,
+          "p95_ms": 2.3687000502832234
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.401910004361222,
+          "median_ms": 2.3540499969385564,
+          "p95_ms": 2.6561000267975032
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.17604332533665001,
+          "median_ms": 0.16974998288787901,
+          "p95_ms": 0.23999996483325958
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.015349996586640676,
+          "median_ms": 0.014849996659904718,
+          "p95_ms": 0.017400016076862812
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.122383329784498,
+          "median_ms": 6.034249992808327,
+          "p95_ms": 6.8672000197693706
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.219686666736379,
+          "median_ms": 6.144699989818037,
+          "p95_ms": 6.732400041073561
+        }
+      }
+    },
+    "labor_002": {
+      "category": "labor",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.006233334230879943,
+          "median_ms": 0.005599984433501959,
+          "p95_ms": 0.008200004231184721
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.282726664794609,
+          "median_ms": 1.2135999568272382,
+          "p95_ms": 1.7182000447064638
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.2543566631308445,
+          "median_ms": 2.229749981779605,
+          "p95_ms": 2.396899973973632
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.418480002476523,
+          "median_ms": 2.3742499761283398,
+          "p95_ms": 2.6317000156268477
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.16244333043384054,
+          "median_ms": 0.1551500172354281,
+          "p95_ms": 0.18009997438639402
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.01621333067305386,
+          "median_ms": 0.016499980119988322,
+          "p95_ms": 0.018000020645558834
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.142786665198703,
+          "median_ms": 6.112200004281476,
+          "p95_ms": 6.563699978869408
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.258000002708286,
+          "median_ms": 6.12865001312457,
+          "p95_ms": 6.859400018583983
+        }
+      }
+    },
+    "labor_003": {
+      "category": "labor",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005563331069424748,
+          "median_ms": 0.005399982910603285,
+          "p95_ms": 0.006800051778554916
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2162833280550938,
+          "median_ms": 1.1743999784812331,
+          "p95_ms": 1.4633999671787024
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.221683331299573,
+          "median_ms": 2.2131500008981675,
+          "p95_ms": 2.3782000062055886
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.414070001880949,
+          "median_ms": 2.3846999974921346,
+          "p95_ms": 2.4979999870993197
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.17268000325808922,
+          "median_ms": 0.1640999980736524,
+          "p95_ms": 0.2136999974027276
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.019053329015150666,
+          "median_ms": 0.016700010746717453,
+          "p95_ms": 0.03029999788850546
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.052009996104364,
+          "median_ms": 6.034099991666153,
+          "p95_ms": 6.58569997176528
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.1290833342354745,
+          "median_ms": 6.109449983341619,
+          "p95_ms": 6.531100021675229
+        }
+      }
+    },
+    "productivity_001": {
+      "category": "productivity",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005286662296081583,
+          "median_ms": 0.0048999791033566,
+          "p95_ms": 0.008100003469735384
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2807333453868825,
+          "median_ms": 1.2310000020079315,
+          "p95_ms": 1.5392000204883516
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.210486662806943,
+          "median_ms": 2.21049998071976,
+          "p95_ms": 2.4169000098481774
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.3940566597351185,
+          "median_ms": 2.3639499850105494,
+          "p95_ms": 2.522599999792874
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.13961666845716536,
+          "median_ms": 0.13509998098015785,
+          "p95_ms": 0.1852000132203102
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.01632334121192495,
+          "median_ms": 0.016600009985268116,
+          "p95_ms": 0.018200022168457508
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.048710002020623,
+          "median_ms": 5.982799979392439,
+          "p95_ms": 6.561500020325184
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.1525366637700545,
+          "median_ms": 6.087799993110821,
+          "p95_ms": 6.722399964928627
+        }
+      }
+    },
+    "productivity_002": {
+      "category": "productivity",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005653329814473788,
+          "median_ms": 0.0051000097300857306,
+          "p95_ms": 0.008300004992634058
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2034300016239285,
+          "median_ms": 1.159599982202053,
+          "p95_ms": 1.7248000367544591
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.249293337808922,
+          "median_ms": 2.240050002001226,
+          "p95_ms": 2.3453999892808497
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.3814899924521646,
+          "median_ms": 2.3465999693144113,
+          "p95_ms": 2.6840000064112246
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.1509766715268294,
+          "median_ms": 0.1441500207874924,
+          "p95_ms": 0.21329999435693026
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.016003334894776344,
+          "median_ms": 0.016350008081644773,
+          "p95_ms": 0.01810002140700817
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.0091066678675515,
+          "median_ms": 5.929600010858849,
+          "p95_ms": 6.8530000280588865
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.179436660992603,
+          "median_ms": 6.119699974078685,
+          "p95_ms": 6.558199995197356
+        }
+      }
+    },
+    "investment_001": {
+      "category": "investment",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005633337423205376,
+          "median_ms": 0.005399982910603285,
+          "p95_ms": 0.007199996616691351
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.188043332270657,
+          "median_ms": 1.1500499967951328,
+          "p95_ms": 1.4597999979741871
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.181976663026338,
+          "median_ms": 2.2016000002622604,
+          "p95_ms": 2.3343999637290835
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.385096669119472,
+          "median_ms": 2.370100002735853,
+          "p95_ms": 2.5029999669641256
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.17265666198606291,
+          "median_ms": 0.17064998974092305,
+          "p95_ms": 0.1938999630510807
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.016176665667444468,
+          "median_ms": 0.016400008462369442,
+          "p95_ms": 0.017499958630651236
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 5.951756667733814,
+          "median_ms": 5.9324000030756,
+          "p95_ms": 6.265899981372058
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.100576663933073,
+          "median_ms": 6.10495000728406,
+          "p95_ms": 6.4023000304587185
+        }
+      }
+    },
+    "policy_001": {
+      "category": "policy",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.007283330584565799,
+          "median_ms": 0.006449990905821323,
+          "p95_ms": 0.012199976481497288
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2592666607815772,
+          "median_ms": 1.205150008900091,
+          "p95_ms": 1.6595000051893294
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.290856665543591,
+          "median_ms": 2.227849996415898,
+          "p95_ms": 2.4785000132396817
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.439026666494707,
+          "median_ms": 2.4107999925035983,
+          "p95_ms": 2.6837000041268766
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.2131899973998467,
+          "median_ms": 0.20864998805336654,
+          "p95_ms": 0.24730002041906118
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.01870000851340592,
+          "median_ms": 0.01580000389367342,
+          "p95_ms": 0.02010003663599491
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.23064666481999,
+          "median_ms": 6.084749998990446,
+          "p95_ms": 7.063500001095235
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.345809992247571,
+          "median_ms": 6.1590000113938,
+          "p95_ms": 7.5514999916777015
+        }
+      }
+    },
+    "policy_002": {
+      "category": "policy",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005326666481172045,
+          "median_ms": 0.0049000082071870565,
+          "p95_ms": 0.006599992047995329
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2467266661891092,
+          "median_ms": 1.1990999628324062,
+          "p95_ms": 1.4789000269956887
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.219646670467531,
+          "median_ms": 2.226699987659231,
+          "p95_ms": 2.3648000205866992
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.4187233318419508,
+          "median_ms": 2.4059999850578606,
+          "p95_ms": 2.542799978982657
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.13685332184347013,
+          "median_ms": 0.13639999087899923,
+          "p95_ms": 0.14979997649788857
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.016523342734823625,
+          "median_ms": 0.01650000922381878,
+          "p95_ms": 0.017900019884109497
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.046180000218253,
+          "median_ms": 6.023249996360391,
+          "p95_ms": 6.390599999576807
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.146553335323309,
+          "median_ms": 6.1283999821171165,
+          "p95_ms": 6.487999984528869
+        }
+      }
+    },
+    "policy_003": {
+      "category": "policy",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005743328559522827,
+          "median_ms": 0.005050038453191519,
+          "p95_ms": 0.009899958968162537
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2779066668978583,
+          "median_ms": 1.2002000003121793,
+          "p95_ms": 1.6553999739699066
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.23398666906481,
+          "median_ms": 2.212599996710196,
+          "p95_ms": 2.4367999867536128
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.428713330300525,
+          "median_ms": 2.3893500037956983,
+          "p95_ms": 2.613399992696941
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.14036667610829076,
+          "median_ms": 0.13599998783320189,
+          "p95_ms": 0.1813999842852354
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.017096657150735457,
+          "median_ms": 0.01680001150816679,
+          "p95_ms": 0.01939997309818864
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.1061366558230175,
+          "median_ms": 6.038899999111891,
+          "p95_ms": 6.576899962965399
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.173376669175923,
+          "median_ms": 6.122999999206513,
+          "p95_ms": 6.670699978712946
+        }
+      }
+    },
+    "governance_001": {
+      "category": "governance",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.00613999436609447,
+          "median_ms": 0.005749985575675964,
+          "p95_ms": 0.008200004231184721
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2556900018050026,
+          "median_ms": 1.2258000206202269,
+          "p95_ms": 1.5591999981552362
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.2446700003153333,
+          "median_ms": 2.240249974420294,
+          "p95_ms": 2.4582999758422375
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.4510533335463456,
+          "median_ms": 2.423699974315241,
+          "p95_ms": 2.754500019364059
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.1824666551935176,
+          "median_ms": 0.18159998580813408,
+          "p95_ms": 0.2011999604292214
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.01653000557174285,
+          "median_ms": 0.01650000922381878,
+          "p95_ms": 0.01839996548369527
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.158806666887055,
+          "median_ms": 6.121949991211295,
+          "p95_ms": 6.619499996304512
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.151736677081014,
+          "median_ms": 6.095899996580556,
+          "p95_ms": 6.647199974395335
+        }
+      }
+    },
+    "competition_001": {
+      "category": "competition",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005846668500453234,
+          "median_ms": 0.005599984433501959,
+          "p95_ms": 0.008400005754083395
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2112266675103456,
+          "median_ms": 1.153699995484203,
+          "p95_ms": 1.591100008226931
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.2525299922563136,
+          "median_ms": 2.240800007712096,
+          "p95_ms": 2.388099965173751
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.406183339189738,
+          "median_ms": 2.370700007304549,
+          "p95_ms": 2.5667999871075153
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.1642999976562957,
+          "median_ms": 0.16265001613646746,
+          "p95_ms": 0.17929996829479933
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.015550001990050077,
+          "median_ms": 0.016000005416572094,
+          "p95_ms": 0.017000013031065464
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.057906670806308,
+          "median_ms": 5.99524998688139,
+          "p95_ms": 6.554200022947043
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.134056662752603,
+          "median_ms": 6.0925000288989395,
+          "p95_ms": 6.437300005927682
+        }
+      }
+    },
+    "competition_002": {
+      "category": "competition",
+      "measurements": {
+        "query_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 0.005873335370173057,
+          "median_ms": 0.005799985956400633,
+          "p95_ms": 0.007099995855242014
+        },
+        "database_loading": {
+          "sample_count": 30,
+          "mean_ms": 1.2141666666138917,
+          "median_ms": 1.1876999924425036,
+          "p95_ms": 1.3970000436529517
+        },
+        "corpus_tokenization": {
+          "sample_count": 30,
+          "mean_ms": 2.2456833297231547,
+          "median_ms": 2.238199987914413,
+          "p95_ms": 2.4486000183969736
+        },
+        "index_construction": {
+          "sample_count": 30,
+          "mean_ms": 2.3834033364740512,
+          "median_ms": 2.3786500096321106,
+          "p95_ms": 2.454900008160621
+        },
+        "scoring_and_ranking": {
+          "sample_count": 30,
+          "mean_ms": 0.17289666963430741,
+          "median_ms": 0.17189999925903976,
+          "p95_ms": 0.18849998014047742
+        },
+        "result_materialization": {
+          "sample_count": 30,
+          "mean_ms": 0.01609666117777427,
+          "median_ms": 0.01654998050071299,
+          "p95_ms": 0.017499958630651236
+        },
+        "total_profiled": {
+          "sample_count": 30,
+          "mean_ms": 6.040936673525721,
+          "median_ms": 6.009949982399121,
+          "p95_ms": 6.3649999792687595
+        },
+        "production_search": {
+          "sample_count": 30,
+          "mean_ms": 6.1184466641861945,
+          "median_ms": 6.088950001867488,
+          "p95_ms": 6.43609999679029
+        }
+      }
+    }
+  }
+}

@@ -34,10 +34,7 @@ backend/tests/fixtures/paper_candidate_headings.txt
 # Evaluation outputs
 backend/evaluation/results/*
 !backend/evaluation/results/retrieval_benchmark_results.json
-
-# Evaluation outputs
-backend/evaluation/results/*
-!backend/evaluation/results/retrieval_benchmark_results.json
+!backend/evaluation/results/bm25_performance_baseline.json
 
 # TypeScript build artifacts
 *.tsbuildinfo

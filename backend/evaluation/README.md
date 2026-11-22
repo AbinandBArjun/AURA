@@ -146,10 +146,69 @@ Results are written to:
 
 `evaluation/results/retrieval_benchmark_results.json`
 
+### Isolated BM25 Performance Benchmark
+
+The isolated BM25 benchmark profiles the individual stages of sparse
+retrieval, separately from the end-to-end retrieval benchmark.
+
+Run it from the `backend` directory:
+
+```powershell
+python -m evaluation.run_bm25_performance
+```
+
+Results are written to:
+
+`evaluation/results/bm25_performance_baseline.json`
+
+
+#### Recorded Baseline
+
+The baseline was measured with the following configuration:
+
+- Dataset: AURA Retrieval Benchmark, version 0.2.
+- Workspace: 1.
+- Corpus: 2 documents, 50 total chunks, 37 retrievable chunks.
+- BM25 implementation: `rank-bm25` 0.2.2.
+- Queries: 12.
+- Warm-up rounds: 3 per query.
+- Measured rounds: 30 per query.
+- Result limit: top 10.
+
+Aggregate timings:
+
+| Stage | Median (ms) | P95 (ms) |
+|---|---:|---:|
+| Query tokenization | 0.006 | 0.008 |
+| Database loading | 1.200 | 1.578 |
+| Corpus tokenization | 2.230 | 2.431 |
+| Index construction | 2.380 | 2.591 |
+| Scoring and ranking | 0.165 | 0.213 |
+| Result materialization | 0.017 | 0.018 |
+| Total profiled | 6.014 | 6.577 |
+| Production search | 6.110 | 6.647 |
+
+Each aggregate stage contains 360 measurements. The benchmark also
+records per-query measurements and verifies that the profiled and
+production implementations return identical ordered chunk IDs.
+
+Corpus tokenization and index construction account for approximately
+76.7% of the total profiled median. They are the largest measured
+components of this baseline.
+
+**Measurement limitation:** the benchmark uses a shared SQLAlchemy
+session across queries and performs warm-up rounds before measurement.
+These results represent a warm-session baseline for the recorded
+37-retrievable-chunk corpus. They do not establish cold-start latency
+or performance at larger corpus sizes. The measurements should be
+repeated against representative larger corpora before making
+scaling or caching decisions.
+
 ## 6. Directory Structure
 
 - `datasets/`: Benchmark dataset (`retrieval_benchmark.json`).
 - `metrics/`: Information retrieval metrics (`retrieval_metrics.py`).
-- `results/`: Benchmark execution output (`retrieval_benchmark_results.json`).
+- `results/`: Benchmark execution output (`retrieval_benchmark_results.json`, `bm25_performance_baseline.json`).
 - `run_retrieval_benchmark.py`: Benchmark runner script.
+- `run_bm25_performance.py`: Isolated BM25 performance profiler.
 - `validate_dataset.py`: Benchmark dataset validator.
