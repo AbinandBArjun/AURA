@@ -8,7 +8,9 @@ from app.retrieval.bm25_retriever import BM25Retriever
 
 @pytest.fixture
 def retriever():
-    return BM25Retriever()
+    retriever = BM25Retriever()
+    retriever.index_cache.clear()
+    return retriever
 
 
 def test_tokenize(retriever):
@@ -91,3 +93,52 @@ def test_no_matching_chunks_returns_empty_list(retriever):
     )
 
     assert results == []
+
+def test_search_reuses_cached_workspace_index(retriever):
+    first_db = MagicMock()
+    first_db.execute.return_value.all.return_value = []
+
+    second_db = MagicMock()
+    second_db.execute.return_value.all.return_value = []
+
+    first_results = retriever.search(
+        db=first_db,
+        workspace_id=101,
+        query="artificial intelligence",
+    )
+
+    second_results = retriever.search(
+        db=second_db,
+        workspace_id=101,
+        query="machine learning",
+    )
+
+    assert first_results == []
+    assert second_results == []
+    first_db.execute.assert_called_once()
+    second_db.execute.assert_not_called()
+
+
+def test_search_rebuilds_index_after_workspace_invalidation(retriever):
+    first_db = MagicMock()
+    first_db.execute.return_value.all.return_value = []
+
+    second_db = MagicMock()
+    second_db.execute.return_value.all.return_value = []
+
+    retriever.search(
+        db=first_db,
+        workspace_id=102,
+        query="artificial intelligence",
+    )
+
+    retriever.index_cache.invalidate(102)
+
+    retriever.search(
+        db=second_db,
+        workspace_id=102,
+        query="artificial intelligence",
+    )
+
+    first_db.execute.assert_called_once()
+    second_db.execute.assert_called_once()

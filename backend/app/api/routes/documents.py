@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_workspace
 from app.db.session import get_db
+from app.retrieval.bm25_index_cache import bm25_index_cache
 from app.chunking.section_classifier import SectionClassifier
 from app.chunking.text_chunker import TextChunker
 from app.models import Document, DocumentPage, DocumentChunk, Workspace
@@ -208,6 +209,7 @@ def process_document(
         if result["total_characters"] == 0:
             document.status = "needs_ocr"
             db.commit()
+            bm25_index_cache.invalidate(workspace.id)
 
             return {
                 "document_id": document.id,
@@ -223,6 +225,7 @@ def process_document(
         # 7. Persist pages and chunks before vector indexing.
         document.status = "indexing"
         db.commit()
+        bm25_index_cache.invalidate(workspace.id)
 
         # 8. Index persisted chunks in Qdrant.
         try:

@@ -204,6 +204,26 @@ or performance at larger corpus sizes. The measurements should be
 repeated against representative larger corpora before making
 scaling or caching decisions.
 
+### Cached BM25 Performance Benchmark
+
+The optimized benchmark measures BM25 retrieval with workspace-scoped index caching.
+
+Run from the backend directory:
+
+    python -m evaluation.run_bm25_optimized_performance
+
+Results: evaluation/results/bm25_performance_optimized.json
+
+| Measurement | Mean (ms) | Median (ms) | P95 (ms) |
+|---|---:|---:|---:|
+| Cold-cache search | 11.807 | 11.454 | 14.670 |
+| Warm-cache search | 0.305 | 0.285 | 0.565 |
+
+The measured warm-cache median was approximately 40.17 times faster than the cold-cache median.
+
+Retrieval-quality metrics remained exactly equal across all five retrieval modes.
+
+The cache is bounded, thread-safe, workspace-scoped, and process-local. Separate worker processes maintain independent caches. Larger production workloads require further benchmarking.
 ## 6. Directory Structure
 
 - `datasets/`: Benchmark dataset (`retrieval_benchmark.json`).
@@ -211,4 +231,5 @@ scaling or caching decisions.
 - `results/`: Benchmark execution output (`retrieval_benchmark_results.json`, `bm25_performance_baseline.json`).
 - `run_retrieval_benchmark.py`: Benchmark runner script.
 - `run_bm25_performance.py`: Isolated BM25 performance profiler.
+- `run_bm25_optimized_performance.py`: Cached BM25 performance benchmark.
 - `validate_dataset.py`: Benchmark dataset validator.
