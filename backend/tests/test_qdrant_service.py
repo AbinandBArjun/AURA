@@ -3,6 +3,9 @@ import pytest
 from app.vector_store.qdrant_service import QdrantService
 
 
+pytestmark = pytest.mark.live_qdrant
+
+
 class FakeEmbeddingService:
     """Deterministic embeddings for fast Qdrant integration tests."""
 

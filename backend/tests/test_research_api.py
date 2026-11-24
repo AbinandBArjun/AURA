@@ -159,6 +159,10 @@ def test_research_api_returns_503_when_graph_fails(client, test_workspace):
 
 
 def test_research_api_rejects_invalid_request(client):
+    app.dependency_overrides[get_research_graph] = (
+        lambda: FakeResearchGraph(should_fail=True)
+    )
+
     response = client.post(
         "/api/v1/research/run",
         json={

@@ -3,6 +3,9 @@ import pytest
 from app.embeddings.embedding_service import EmbeddingService
 
 
+pytestmark = pytest.mark.real_embedding_model
+
+
 @pytest.fixture(scope="module")
 def embedding_service():
     return EmbeddingService()

@@ -1,12 +1,21 @@
 from unittest.mock import patch
 
 import pymupdf
+import pytest
 
 from sqlalchemy import select, func
 
 from app.chunking.text_chunker import TextChunker
 from app.models import Document, DocumentPage, DocumentChunk
 from app.api.routes import documents as documents_route
+
+
+@pytest.fixture
+def vector_store():
+    with patch("app.services.document_indexer.QdrantService", autospec=True) as service:
+        vector_store = service.return_value
+        vector_store.upsert_chunks.side_effect = lambda *, chunks, workspace_id: len(chunks)
+        yield vector_store
 
 
 def create_test_pdf(path):
@@ -39,6 +48,7 @@ def test_document_processing_and_reprocessing(
     current_workspace,
     tmp_path,
     monkeypatch,
+    vector_store,
 ):
     # Use temporary storage instead of real uploaded PDFs.
     monkeypatch.setattr(
@@ -126,6 +136,7 @@ def test_document_processing_and_reprocessing(
 
     assert new_page_count == page_count
     assert new_chunk_count == chunk_count
+    assert vector_store.upsert_chunks.call_count == 2
 
 
 def test_chunking_failure_preserves_existing_data(
@@ -134,6 +145,7 @@ def test_chunking_failure_preserves_existing_data(
     current_workspace,
     tmp_path,
     monkeypatch,
+    vector_store,
 ):
     monkeypatch.setattr(
         documents_route,
@@ -207,5 +219,6 @@ def test_chunking_failure_preserves_existing_data(
 
     assert remaining_pages == original_pages
     assert remaining_chunks == original_chunks
+    vector_store.upsert_chunks.assert_called_once()
 
 

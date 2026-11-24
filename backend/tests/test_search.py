@@ -71,17 +71,17 @@ def test_search_service_returns_document_metadata(
 
 
 def test_search_service_rejects_missing_workspace(db_session):
-    service = SearchService()
+    qdrant = MagicMock()
+    service = SearchService(qdrant_service=qdrant)
 
-    try:
+    with pytest.raises(ValueError, match=r"^Workspace not found\.$"):
         service.search(
             db=db_session,
             workspace_id=99999,
             query="Test query",
         )
-        assert False, "Expected ValueError"
-    except ValueError as exc:
-        assert str(exc) == "Workspace not found."
+
+    qdrant.search.assert_not_called()
 
 
 def test_search_api_success(client, current_workspace):
