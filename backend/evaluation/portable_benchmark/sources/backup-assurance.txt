@@ -1,0 +1,14 @@
+Evidence from a Fictional Archive Restoration Exercise
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+A fictional records office tested whether it could rebuild a searchable archive after its primary storage became unavailable. It kept inventories of completed copies, actual restoration attempts, and validation of restored records. A completed copy meant that the transfer task reported success. A usable restore required an independent worker to open a restored record, confirm expected contents, and show that the search service included it under the correct access rules.
+
+Results
+In a synthetic exercise, the office completed 38 of 40 scheduled copies. When it selected ten snapshots for restoration, seven were usable before the next work period. Two had a missing search index, and one depended on access through the primary identity directory. The team separated the age of the latest usable copy from the elapsed time until staff could resume searching. The first measured how much work might be lost. The second included the time spent rebuilding an index and gaining access to the archive.
+
+Discussion
+The office rehearsed on a separate recovery environment with a limited, auditable recovery identity. It selected records containing amendments and compared their contents to an approved reference inventory. A random check that returned only unchanged records would have missed stale amendments. It also kept a record of snapshots created before a configuration change. Comparing a new copy against another new copy alone would not reveal a defect shared by both. The exercise measured recovery capability rather than estimating how frequently the original system would fail.
+
+Conclusion
+The team retained both transfer and restore histories, because they answered different operational questions. A nearby media group tracked camera battery replacement and called the elapsed replacement time a recovery interval. That number helped plan recording sessions. It did not tell records staff whether access controls, amendments, or the search index would be available after an archive outage.

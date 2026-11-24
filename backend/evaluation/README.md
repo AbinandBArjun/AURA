@@ -262,6 +262,9 @@ The measured warm-cache median was approximately 40.17 times faster than the col
 Retrieval-quality metrics remained exactly equal across all five retrieval modes.
 
 The cache is bounded, thread-safe, workspace-scoped, and process-local. Separate worker processes maintain independent caches. Larger production workloads require further benchmarking.
+The [portable synthetic benchmark corpus](portable_benchmark/README.md)
+is a separate foundation with logical passage IDs and draft queries.
+
 ## 6. Directory Structure
 
 - `datasets/`: Benchmark dataset (`retrieval_benchmark.json`).

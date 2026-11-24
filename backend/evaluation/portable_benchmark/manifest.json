@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "corpus_name": "AURA Portable Synthetic Research Corpus",
+  "corpus_version": "0.1.0",
+  "extraction": {
+    "protocol": "text-pdf-v1",
+    "source_encoding": "utf-8-ascii-lf-v1",
+    "line_width": 88,
+    "lines_per_page": 50
+  },
+  "chunking": {
+    "protocol": "aura-section-page-chunks-v1",
+    "tokenizer": "cl100k_base",
+    "tokenizer_package_version": "0.14.0",
+    "chunk_size": 500,
+    "chunk_overlap": 75
+  },
+  "passage_id_scheme": "p1",
+  "corpus_fingerprint": "e4f0f2fba8a9c2b598a260269891cde0b54d9566b0c0a68beb74443a7d700300",
+  "documents": [
+    {
+      "key": "backup-assurance",
+      "domain": "cybersecurity",
+      "title": "Evidence from a Fictional Archive Restoration Exercise",
+      "source_path": "sources/backup-assurance.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "9af4cdbd3783e31bb2c7ab4caba2c7b52a9b315c32563a2bf6ff92a25f3ae941"
+    },
+    {
+      "key": "event-replay",
+      "domain": "software-engineering",
+      "title": "Replay Boundaries in a Fictional Work Order Pipeline",
+      "source_path": "sources/event-replay.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "4af7ab2ab4a23f5c3faa09dcdcb298faaa7bdc2289df5c3d06ea7efadd724a2b"
+    },
+    {
+      "key": "evidence-routing",
+      "domain": "artificial-intelligence",
+      "title": "Conditional Evidence Review in Larkspur Service Desks",
+      "source_path": "sources/evidence-routing.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "7cdb412d11304ae77da0a69de0af78045b72d76fe56dcdb8f854b2a8b30d72db"
+    },
+    {
+      "key": "identity-review",
+      "domain": "cybersecurity",
+      "title": "Access Review and Recovery Ownership at Elm Harbor",
+      "source_path": "sources/identity-review.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "3150994725094e8b59f70b686e6ea78cc7d7107692a171f030ce1dedacfbca4c"
+    },
+    {
+      "key": "model-shift",
+      "domain": "artificial-intelligence",
+      "title": "Delayed Labels in a Fictional Inspection Model",
+      "source_path": "sources/model-shift.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "2622f4805ec65e3eedb3cfaa67daa1a5232a86870a8bafeca04926fe5dac92a7"
+    },
+    {
+      "key": "shared-cache",
+      "domain": "software-engineering",
+      "title": "Cache Boundaries for Fictional Project Search",
+      "source_path": "sources/shared-cache.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "833f7bce273e4f47c28598611b78bc3827fd69a81c7edad1f645d56ecb15b8fa"
+    },
+    {
+      "key": "tariff-rebate",
+      "domain": "economics",
+      "title": "Household Response to a Fictional Peak Tariff Credit",
+      "source_path": "sources/tariff-rebate.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "22da0b000e48cdf75f05d1915a7dd19360c63bfbd33a8c6b683fd007455917f2"
+    },
+    {
+      "key": "vendor-transition",
+      "domain": "economics",
+      "title": "Switching Frictions in a Fictional Procurement Network",
+      "source_path": "sources/vendor-transition.txt",
+      "provenance": "original-synthetic-for-aura",
+      "redistribution": "no-grant-recorded",
+      "source_sha256": "38534e055f92099a13b3a6e1dfa688d717064ec1f13c87979ee62f922a200fc6"
+    }
+  ]
+}

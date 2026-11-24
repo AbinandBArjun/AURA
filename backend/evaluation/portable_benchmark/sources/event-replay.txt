@@ -1,0 +1,14 @@
+Replay Boundaries in a Fictional Work Order Pipeline
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+A fictional municipal platform copied work order changes from an intake log into a billing index. Messages could be redelivered after timeouts, and a consumer could stop after saving a result but before acknowledging the message. The designers separated the position in the log from the identity of a business action. A message sequence number described where a worker resumed reading. An action key helped detect a repeat of an already committed change.
+
+Results
+In a synthetic set of 500 changes, a deliberate restart delivered 24 messages twice. The naive consumer incremented a fee each time it received a change. The revised consumer recorded the action key in the same local transaction as the fee update. It acknowledged after commit. On replay, the stored key made the second delivery a no-op. The team also sent a correction with a new action key for the same work order. The correction had to apply, which ruled out rejecting all later messages for a work order.
+
+Discussion
+A recovery job rebuilt the index from a consistent starting snapshot and a bounded log range. It produced a new index before readers were switched over. Late-arriving records beyond the chosen boundary were handled in the following replay and did not become part of the earlier snapshot. A report distinguished the newest processed event time from the log position. A few delayed events had old event times but arrived at later positions. Sorting by event date alone would skip those events after a restart.
+
+Conclusion
+The reliability review counted duplicate charges and missed corrections rather than judging the number of deliveries. A separate supply cart inventory also had duplicate labels for two sizes of fasteners. Its clerk corrected labels in a spreadsheet without applying the billing index protocol. The two incident notes shared a duplicate-record tag, but their remedies were specific to the two processes.

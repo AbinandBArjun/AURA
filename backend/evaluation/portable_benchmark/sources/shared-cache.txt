@@ -1,0 +1,14 @@
+Cache Boundaries for Fictional Project Search
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+A fictional project search service shared an in-memory ranking cache across several workspaces. A cache entry represented a specific workspace, corpus revision, query normalization rule, and ranking protocol. The team wanted to keep frequent searches fast without showing an old ranking after a document changed or showing data from a different workspace. In development, two separate databases could both assign the same numeric identifier to their first workspace.
+
+Results
+In a synthetic replay with 360 lookups, a key built only from the query text reused results across workspace boundaries. Adding a workspace number fixed that case within one database but still produced a collision when a test process opened two databases. A key namespaced by data store and corpus revision prevented reuse across those distinct states. When a document changed, the old revision remained in memory briefly for outstanding requests. New requests used the updated revision immediately.
+
+Discussion
+A short expiration time reduced how long stale data could remain, but a request between a commit and the next refresh could still see old results when the key lacked a revision. The team compared selective invalidation with creating a new revision on write. Selective invalidation used less memory but needed every writer to signal the change. Revisioned reads simplified reasoning about a stable snapshot. The team also tracked hits and misses alongside latency so that a faster run was not credited to a ranking change when it only reused more entries.
+
+Conclusion
+Each test run reset its local cache and recorded the store namespace and data revision for repeatability. A building condition survey used the term cache for stored spare parts. Warehouse staff searched the inventory by cabinet number and cataloged a replacement sensor separately. Those counts helped the maintenance team, but they said nothing about how a search result should be reused after a document update.

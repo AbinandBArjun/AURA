@@ -1,0 +1,14 @@
+Delayed Labels in a Fictional Inspection Model
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+The North Quay inspection team used a classifier to prioritize images of machine housings. The model supplied a triage score and a human retained the final decision. Inspection outcomes were usually available three weeks after a prediction, because units had to be opened and reviewed. A lamp replacement changed the distribution of image brightness immediately. The team could detect an input change before it could tell whether the model made more defective-unit errors.
+
+Results
+During a synthetic comparison of old and new lighting, the highest-priority group grew from 11 to 18 percent of submissions. That number reflected a change in the score distribution. It did not measure whether the newly prioritized units were defective. A shadow release recorded scores from a revised model for the same images while the older model continued to drive the queue. Once labels matured, reviewers paired the scores by image, examined missed defects at the same inspection capacity, and kept a site held out of threshold selection.
+
+Discussion
+The team initially considered renewing the threshold whenever brightness moved beyond its control limits. It retained the existing threshold until the delayed outcome comparison was available. Brightness was sensitive to lamp aging, but some unusually bright sites had a lower rate of genuine defects because they inspected a different alloy. A second dashboard checked whether the human reviewers had changed grading practice. The model could appear to improve when inspectors became less likely to label small dents as defects.
+
+Conclusion
+The release decision depended on delayed error measurements and inspection capacity, with the input shift serving as an alert. A separate shift-scheduling pilot used a similar score and an unresolved queue backlog. That queue was about staffing preference and contained no physical defect labels. Although both dashboards used a weekly review cadence, the staffing data could not support the inspection release decision.

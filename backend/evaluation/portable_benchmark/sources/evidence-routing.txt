@@ -1,0 +1,14 @@
+Conditional Evidence Review in Larkspur Service Desks
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+The Larkspur research office evaluated an assistant that answered questions about service policies. Analysts gave it a request and a packet of policy extracts from a fictional agency. The office wanted a useful answer when the packet was adequate, and a clear handoff when an answer depended on a missing exception. Reviewers distinguished an incomplete packet from a packet that contained two policies with different effective dates. In the latter case the more recent approved rule usually governed, but a recent draft did not displace an older approved rule.
+
+Results
+The office compared two routing rules on 240 synthetic requests. A fixed confidence cutoff sent 60 requests to review and released 16 responses with an unsupported material claim. The source-based rule sent 78 requests to review and released six with an unsupported material claim. It asked whether each material claim could be tied to a passage and whether passages about exceptions were current. Reviewers counted a request as covered only if the assistant released a substantive answer. Coverage therefore fell under the source-based rule even though fewer released answers were unsupported.
+
+Discussion
+A passage can establish a general rule without establishing which rule applies to a particular applicant. An analyst marked a case incomplete if the exception table was absent, even when ten passages repeated the general rule. A second reviewer independently checked disagreements about approved dates. When sources appeared contradictory, the team recorded both passages and routed the item to a reviewer rather than combining the language into a single rule. The assistant was evaluated on how it handled this boundary and was not given credit for guesses that happened to agree with a hidden reference.
+
+Conclusion
+The service desk recommended monitoring released-answer error rates alongside the share of requests it resolved automatically. Its office renovation survey found that warmer desks attracted more volunteers for evening shifts. This was reported with staffing notes because the review rota changed, but it supplied no evidence about policy quality. A later evaluation would test whether the rule remains sensible when policy updates cluster at the end of a month.

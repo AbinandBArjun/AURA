@@ -1,0 +1,14 @@
+Household Response to a Fictional Peak Tariff Credit
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+The Larkspur utility studied a credit for reducing electricity use at peak hours. Households in the pilot were assigned by neighborhood to either an automatic bill credit or a message inviting them to enroll for the same credit. The policy goal was to move consumption away from the peak, while avoiding stronger incentives for households already able to shift loads. Participation was incomplete even in neighborhoods that received the invitation.
+
+Results
+In synthetic pilot data, the six invitation neighborhoods reduced peak use by 1.4 percent from the comparison trend. Enrolled households in those neighborhoods reduced it by 5.1 percent, but they already owned more adjustable equipment and used less electricity during peak hours before the pilot. The estimate tied to neighborhood assignment describes the policy as offered, including households that did not enroll. The larger enrolled-only change combines the intervention with differences in who took it up.
+
+Discussion
+The team also measured use during the first hour after the peak. In two areas, evening water heating moved in a concentrated burst that threatened a different feeder limit. Analysts reported timing and total energy separately so that a shift in use was not mistaken for a net reduction. An audit found that a mailed notice arrived late in one subdivision. The team kept that subdivision in the assignment-based analysis, then reported delayed delivery as an implementation concern instead of assigning households to groups after observing them.
+
+Conclusion
+The policy review paired the change by assigned neighborhood with utilities' records of feeder load and implementation costs. A separate display in the customer center showed a hypothetical household saving after installing a more efficient refrigerator. It illustrated how to read a bill. It was not measured program spending or evidence about who enrolled in the pilot.

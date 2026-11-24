@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "corpus_fingerprint": "e4f0f2fba8a9c2b598a260269891cde0b54d9566b0c0a68beb74443a7d700300",
+  "review_status": "draft",
+  "queries": [
+    {
+      "query_id": "ai-01",
+      "category": "artificial-intelligence",
+      "query": "When should an automated answer be held for a person even if many passages repeat the default policy?",
+      "judgments": []
+    },
+    {
+      "query_id": "ai-02",
+      "category": "artificial-intelligence",
+      "query": "What operational trade-off appears when a service desk evaluates claim support before releasing answers?",
+      "judgments": []
+    },
+    {
+      "query_id": "ai-03",
+      "category": "artificial-intelligence",
+      "query": "How should an analyst resolve a contradiction involving a recently written draft?",
+      "judgments": []
+    },
+    {
+      "query_id": "ai-04",
+      "category": "artificial-intelligence",
+      "query": "What would be counted to tell whether more requests are resolved without staff intervention?",
+      "judgments": []
+    },
+    {
+      "query_id": "ai-05",
+      "category": "artificial-intelligence",
+      "query": "Why might the top priority queue grow without evidence that the inspection model got worse?",
+      "judgments": []
+    },
+    {
+      "query_id": "ai-06",
+      "category": "artificial-intelligence",
+      "query": "What makes a side-by-side release comparison feasible when inspection outcomes arrive weeks late?",
+      "judgments": []
+    },
+    {
+      "query_id": "ai-07",
+      "category": "artificial-intelligence",
+      "query": "What alternative explanation should reviewers check before attributing an apparent improvement to a new classifier?",
+      "judgments": []
+    },
+    {
+      "query_id": "ai-08",
+      "category": "artificial-intelligence",
+      "query": "What evidence supports choosing a threshold at a fixed review capacity?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-01",
+      "category": "cybersecurity",
+      "query": "Which approvals are needed when a contractor moves from one project to another?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-02",
+      "category": "cybersecurity",
+      "query": "What evidence would show that emergency access worked during an identity outage?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-03",
+      "category": "cybersecurity",
+      "query": "Why should automated accounts and employee permissions be tracked in separate records?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-04",
+      "category": "cybersecurity",
+      "query": "What can show that a temporary privilege ended when it should have?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-05",
+      "category": "cybersecurity",
+      "query": "Why can a successful copy still leave archive staff unable to search their records?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-06",
+      "category": "cybersecurity",
+      "query": "How do the age of recoverable work and the delay until staff can resume differ?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-07",
+      "category": "cybersecurity",
+      "query": "What restoration check is sensitive to records that were amended recently?",
+      "judgments": []
+    },
+    {
+      "query_id": "cy-08",
+      "category": "cybersecurity",
+      "query": "How should a recovery exercise guard against two copies sharing the same fault?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-01",
+      "category": "economics",
+      "query": "Which estimate best describes the effect of offering a program when many eligible households decline it?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-02",
+      "category": "economics",
+      "query": "Why is consumption among volunteers a weak substitute for comparing the groups originally assigned?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-03",
+      "category": "economics",
+      "query": "How could lower peak demand still create a problem for the distribution network?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-04",
+      "category": "economics",
+      "query": "How should a neighborhood with late notification be treated in the primary comparison?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-05",
+      "category": "economics",
+      "query": "How could the supplier with the cheaper subscription cost more over the first year?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-06",
+      "category": "economics",
+      "query": "What distinction matters between obtaining a copy of a purchase history and being able to use it elsewhere?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-07",
+      "category": "economics",
+      "query": "Which types of buyers are most exposed to a large one-time switching expense?",
+      "judgments": []
+    },
+    {
+      "query_id": "econ-08",
+      "category": "economics",
+      "query": "Why does reducing buyers' migration costs alone leave the future number of vendors uncertain?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-01",
+      "category": "software-engineering",
+      "query": "How can a worker avoid applying the same fee twice when it dies before acknowledging a message?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-02",
+      "category": "software-engineering",
+      "query": "What identifier lets two legitimate changes to the same work order both take effect?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-03",
+      "category": "software-engineering",
+      "query": "Why would restarting from the newest event timestamp lose valid updates?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-04",
+      "category": "software-engineering",
+      "query": "How can readers stay on a consistent search index during a rebuild?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-05",
+      "category": "software-engineering",
+      "query": "What key fields prevent identical queries from sharing rankings across independently seeded data stores?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-06",
+      "category": "software-engineering",
+      "query": "Why can a recently committed edit still appear stale under a short expiration policy?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-07",
+      "category": "software-engineering",
+      "query": "What trade-off separates targeted cache eviction from versioned lookup keys?",
+      "judgments": []
+    },
+    {
+      "query_id": "sw-08",
+      "category": "software-engineering",
+      "query": "What should be measured alongside search latency to distinguish caching effects from ranking changes?",
+      "judgments": []
+    },
+    {
+      "query_id": "cross-01",
+      "category": "cross-domain",
+      "query": "How can an archive rehearsal and an index replay each show that a replacement is usable before relying on it?",
+      "judgments": []
+    },
+    {
+      "query_id": "cross-02",
+      "category": "cross-domain",
+      "query": "Which controls preserve isolation when two data stores or systems use similar identities or identifiers?",
+      "judgments": []
+    },
+    {
+      "query_id": "cross-03",
+      "category": "cross-domain",
+      "query": "Why can an operational indicator improve while the underlying outcome of interest is still unknown?",
+      "judgments": []
+    },
+    {
+      "query_id": "cross-04",
+      "category": "cross-domain",
+      "query": "Why can fewer unsupported answers mean less work is resolved automatically, and why can a lower supplier quote still lead to higher first-year spending?",
+      "judgments": []
+    }
+  ]
+}

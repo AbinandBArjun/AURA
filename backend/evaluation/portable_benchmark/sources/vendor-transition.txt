@@ -1,0 +1,14 @@
+Switching Frictions in a Fictional Procurement Network
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+A group of fictional public laboratories considered making their purchasing histories portable across catalog vendors. One vendor offered a low first-year price but charged separately for converting past purchase records and for support during the changeover. The laboratories studied whether a standardized record bundle reduced the cost of switching. They separated the quoted price of a new contract from the time needed to change approval processes, retrain buyers, and verify that old records still matched accounts.
+
+Results
+In synthetic cost worksheets, one alternative vendor quoted 84 credits per month versus 100 for the incumbent. For a 12-month comparison, migration and training added 230 credits, making the alternative cost 38 credits more in that period. Laboratory teams with a successful record transfer faced lower conversion expense and could compare offers for a longer contract horizon. A low monthly price persuaded some buyers to request a trial without leading them to switch.
+
+Discussion
+The laboratories separated the right to export records from the receiving vendor's ability to interpret them. A bundle that omitted delegated approval information needed reconstruction by purchasing staff. Fixed transition costs mattered more for small buyers with short contracts, while some larger buyers could spread the costs over more staff and years. The analysis described counterfactual scenarios and did not infer how many vendors would enter if the bundle became mandatory. Supplier entry depends on factors beyond buyers' portability costs.
+
+Conclusion
+The network recommended measuring realized transition costs independently from advertising claims about migration speed. A parallel energy-use report used a first-year discount to encourage laboratory buildings to enroll in a program. That report and the procurement catalog used the same accounting unit. The energy discount did not reduce the number of historical approval records a laboratory had to move.

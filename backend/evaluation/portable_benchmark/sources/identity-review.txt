@@ -1,0 +1,14 @@
+Access Review and Recovery Ownership at Elm Harbor
+Fictional evaluation material. All observations and numbers are synthetic.
+
+Introduction
+Elm Harbor operated a fictional research workspace with short-term contractors and long-lived automated jobs. The security team reviewed who could change access policy, who could approve a recovery action, and whether a shared support login obscured individual accountability. A supervisor's approval of employment status was separate from a system owner's approval of access to a particular dataset. The study described controls and their audit evidence.
+
+Results
+In a synthetic sample of 120 entitlements, 18 belonged to workers who had changed assignments, and seven of those still had access to the old workspace. The team created a dated handoff record linking an entitlement to a specific owner and an independent reviewer. It gave temporary operational privileges a fixed expiry. Shared service identities were assigned an owner and a separate reviewer. They were measured in a different inventory from person-linked roles, because they remained active after contractors left.
+
+Discussion
+During a continuity exercise the response group could list approved roles while the normal management screen was down, but neither listed administrator could sign in. Both accounts depended on the same identity provider. The group set up a separately administered recovery identity, required approval by two named people, and tested access while normal identity services were unavailable. They recorded approval, actual use, and revocation events as separate observations. A quiet dashboard did not prove the recovery control worked, since the review window could include no incident.
+
+Conclusion
+The access records were retained to show who made a decision as well as who received access. A purchasing exercise introduced a different concept of ownership: the department that owned a supplier contract. Its sign-off was useful for following expenditures, but it did not authorize changes to system privileges. Keeping the two ownership lists apart reduced mistakes when staff transferred between the support and procurement teams.
