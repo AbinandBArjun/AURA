@@ -1,6 +1,9 @@
 import math
 
 
+RANKING_METRICS = ("precision_at_5", "recall_at_5", "mrr", "ndcg_at_5")
+
+
 def _normalise_relevance(
     relevant_chunks: dict[str, int],
 ) -> dict[str, int]:

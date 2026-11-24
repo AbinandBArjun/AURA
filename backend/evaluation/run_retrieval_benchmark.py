@@ -1,3 +1,4 @@
+import argparse
 import json
 import statistics
 import time
@@ -7,6 +8,7 @@ from pathlib import Path
 from app.db.session import SessionLocal
 from app.services.search_service import SearchService
 from evaluation.metrics.retrieval_metrics import (
+    RANKING_METRICS,
     precision_at_k,
     recall_at_k,
     reciprocal_rank,
@@ -55,12 +57,7 @@ RETRIEVAL_CONFIGS = [
     },
 ]
 
-METRICS = [
-    "precision_at_5",
-    "recall_at_5",
-    "mrr",
-    "ndcg_at_5",
-]
+METRICS = list(RANKING_METRICS)
 
 LATENCY_METRICS = [
     "mean_latency_ms",
@@ -177,7 +174,7 @@ def group_by_category(query_results):
     }
 
 
-def run_benchmark():
+def run_benchmark(output_path=OUTPUT_PATH):
     dataset = load_dataset()
     workspace_id = dataset["workspace_id"]
 
@@ -291,13 +288,25 @@ def run_benchmark():
         "results": all_results,
     }
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with OUTPUT_PATH.open("w", encoding="utf-8") as file:
+    with output_path.open("w", encoding="utf-8") as file:
         json.dump(output, file, indent=2)
 
-    print(f"\nResults saved to: {OUTPUT_PATH}")
+    print(f"\nResults saved to: {output_path}")
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Run the retrieval benchmark.")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUTPUT_PATH,
+        help="Results path. Use a separate file when checking against the tracked baseline.",
+    )
+    args = parser.parse_args(argv)
+    run_benchmark(args.output)
 
 
 if __name__ == "__main__":
-    run_benchmark()
+    main()

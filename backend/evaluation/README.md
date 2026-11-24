@@ -146,6 +146,44 @@ Results are written to:
 
 `evaluation/results/retrieval_benchmark_results.json`
 
+### Check for Retrieval Regressions
+
+Write a fresh report to a separate file and compare it with the tracked baseline:
+
+```powershell
+python -m evaluation.run_retrieval_benchmark --output evaluation/results/retrieval_benchmark_current.json
+python -m evaluation.check_retrieval_regression evaluation/results/retrieval_benchmark_current.json
+```
+
+Run these commands from `backend`. The benchmark runner uses the services
+listed above. The checker only reads the two JSON reports, so it also runs
+offline or in CI. Always use `--output` for regression checks. The benchmark's
+default output path is the tracked baseline.
+
+The checker compares Precision@5, Recall@5, MRR, and nDCG@5 at both the
+configuration and query levels. It matches dataset name and version,
+workspace, cutoff, query count, retrieval settings, query IDs, and categories.
+When changing the benchmark questions or relevance labels, increment the
+dataset version and record a new baseline for that version. Latency is
+excluded from the quality check.
+
+By default, a drop in any ranking score fails the check. Use
+`--aggregate-tolerance` and `--query-tolerance` to allow absolute score drops.
+For example, `--aggregate-tolerance 0.02` allows a configuration score to
+drop from `0.80` to `0.78`. Repeat `--minimum METRIC=VALUE` to set absolute
+aggregate floors across all configurations, such as `--minimum mrr=0.80`.
+Use `--baseline PATH` to select another reference report.
+
+| Exit code | Meaning |
+|---|---|
+| 0 | All quality checks passed. |
+| 1 | At least one score exceeded its allowed drop or fell below its minimum. |
+| 2 | The reports could not be read or compared, or the arguments were invalid. |
+
+Each regression identifies the configuration, metric, query ID when
+applicable, and the values that triggered the failure. Duplicate JSON keys
+are rejected anywhere in either report, even when their values agree.
+
 ### Isolated BM25 Performance Benchmark
 
 The isolated BM25 benchmark profiles the individual stages of sparse
@@ -230,6 +268,7 @@ The cache is bounded, thread-safe, workspace-scoped, and process-local. Separate
 - `metrics/`: Information retrieval metrics (`retrieval_metrics.py`).
 - `results/`: Benchmark execution output (`retrieval_benchmark_results.json`, `bm25_performance_baseline.json`).
 - `run_retrieval_benchmark.py`: Benchmark runner script.
+- `check_retrieval_regression.py`: Retrieval quality regression checker.
 - `run_bm25_performance.py`: Isolated BM25 performance profiler.
 - `run_bm25_optimized_performance.py`: Cached BM25 performance benchmark.
 - `validate_dataset.py`: Benchmark dataset validator.
