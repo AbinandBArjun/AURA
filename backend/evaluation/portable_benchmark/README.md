@@ -112,7 +112,7 @@ chunking, and ID-scheme fields. The text digest uses UTF-8 after Unicode NFC
 normalization and collapse of whitespace runs to single spaces. A change to
 the defined extraction or chunking behavior requires a new protocol version.
 Database document IDs, chunk IDs, and Qdrant point IDs are runtime mappings
-for a later checkpoint.
+in a seed readiness record.
 
 **Dataset schema v1.** The dataset supplies a matching corpus fingerprint,
 a draft or reviewed status, and unique query IDs with a category and text.
@@ -131,7 +131,163 @@ including plausible distractors. The reviewed dataset requires at least one
 positive judgment per query and every recorded judgment to be reviewed.
 This checkpoint includes no final judgments or scores.
 
-A later checkpoint can seed a disposable database and vector collection,
-capture the logical-to-runtime ID map, and verify that seeded passages
-match this protocol. Run and review a portable baseline only after corpus,
-judgment, and seeding checks pass. Keep those artifacts separate from v0.2.
+Run and review a portable baseline only after corpus, judgment, and seeding checks pass. Keep those artifacts separate from v0.2.
+
+## Seed a disposable benchmark environment
+
+Run from `backend` with Python 3.12, the backend dependencies, and a local
+Linux Docker Engine or Docker Desktop in Linux-container mode. Prepare the
+pinned MiniLM weights once. Cold preparation needs public Hugging Face
+access. Seeding validates every required model file and loads it offline
+on CPU with remote model code disabled. A cold `tiktoken` cache can still
+need its public vocabulary download. No Ollama or paid inference is used.
+
+```bash
+python tests/prepare_embedding_model.py /absolute/path/to/aura-benchmark-minilm
+
+state="$(mktemp -d)/ownership.json"
+python -m evaluation.portable_benchmark.seed_lifecycle start \
+  --docker-context default --state "$state" --postgres-port 15432 --qdrant-port 16333
+
+project="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["record"]["project"])' "$state")"
+python -m evaluation.portable_benchmark.seed \
+  --docker-context default --project "$project" --postgres-port 15432 --qdrant-port 16333 \
+  --model-dir /absolute/path/to/aura-benchmark-minilm
+# Repeat the same seed command to verify the existing state.
+python -m evaluation.portable_benchmark.seed_lifecycle stop --state "$state"
+```
+
+For Windows PowerShell, select `desktop-linux` if that is the local Docker
+context and use the following commands with a prepared model directory:
+
+```powershell
+$state = Join-Path $env:TEMP ('aura-bench-' + (New-Guid).ToString('N') + '.json')
+python -m evaluation.portable_benchmark.seed_lifecycle start --docker-context desktop-linux --state $state --postgres-port 15432 --qdrant-port 16333
+if ($LASTEXITCODE -ne 0) { throw 'Benchmark startup failed' }
+$stack = (Get-Content -LiteralPath $state -Raw | ConvertFrom-Json).record
+python -m evaluation.portable_benchmark.seed --docker-context $stack.context --project $stack.project --postgres-port $stack.postgres_port --qdrant-port $stack.qdrant_port --model-dir 'C:\path\to\prepared-minilm'
+# After verification:
+python -m evaluation.portable_benchmark.seed_lifecycle stop --state $state
+```
+
+### Lifecycle ownership and isolation
+
+| Resource | Benchmark setting |
+| --- | --- |
+| PostgreSQL | 16.16 Bookworm, pinned by digest. Database `aura_portable_benchmark`, role `aura_benchmark`, loopback host port 15432, and `tmpfs` at `/var/lib/postgresql/data`. |
+| Qdrant | 1.20.0, pinned by digest. Collection `aura_portable_passages_v1`, loopback host port 16333, and `tmpfs` at `/qdrant/storage`. |
+| Generated PDFs | A temporary directory owned by the seeder. SQL `storage_key` values identify benchmark documents without publishing PDF files to the application's document browser. |
+
+The lifecycle command chooses a unique project and checks the namespace
+and project labels for existing containers, networks, and volumes before
+creation. It also checks the requested loopback ports. Docker reserves the
+project through a stopped, uniquely named ownership container. The
+namespace can be supplied explicitly with `--project` for testing, with
+the same conflict checks. The lifecycle makes a labeled bridge and gives
+it to Compose as an external network. Compose creates with
+`--no-recreate`, and the lifecycle starts only the service IDs it
+inspected. The explicit environment file avoids loading the application's
+`.env`. The command ignores inherited Compose overrides and generates
+fresh, separate credentials for each execution.
+
+Keep the ownership record in a trusted local directory outside the
+repository. It records the execution label, project, context, ports, and
+resource IDs without credentials. A file lock serializes commands on the
+same record. The Docker name reservation handles two cooperating starts
+that choose the same project using different files. Shutdown checks the
+record, the execution labels, the recorded IDs, and network attachments.
+It removes resources by exact Docker ID and leaves the ownership record
+marked stopped. It does not use `docker compose down` or delete volumes.
+The record checksum detects accidental edits and does not authenticate a
+file against a user who can rewrite it and control Docker.
+
+### Seed identity and readiness
+
+The seeder accepts no database or vector-store URL. It verifies the local
+Docker context, benchmark configuration, images, network, loopback ports,
+`tmpfs` mounts, execution label, and ownership reservation. PostgreSQL
+migrations and data writes use one connection and transaction. The
+connection must report the same database, role, and cluster system ID as
+the inspected PostgreSQL container. A PostgreSQL transaction advisory
+lock excludes concurrent seed attempts for that database.
+
+Qdrant requests are sent through `docker exec` using the full inspected
+container ID. The exec checks the container process namespace and start
+token before opening its internal loopback socket for each request. A
+new container reusing the published port and API key does not receive
+those requests. A restart under the same container ID changes the process
+identity. The seeder repeats infrastructure checks before storing or
+returning readiness. Test canary teardown also uses the original Qdrant
+transport and verifies the PostgreSQL cluster before issuing SQL cleanup.
+
+The Qdrant library can warn that the API key is used over HTTP. The seeder's
+requests use HTTP on the inspected container's loopback interface, and
+the Compose host port is bound to `127.0.0.1`. This setup is for disposable
+local verification. The HTTP service, temporary storage, and local
+administrative credentials are unsuitable for remote exposure or for
+production use.
+
+The seeder verifies the frozen 40-passage catalog again after text PDF
+extraction and benchmark-specific chunking. It indexes retrievable chunks
+as normalized 384-dimensional cosine vectors and verifies every stored
+point ID, payload, and vector. A successful run prints a versioned JSON
+readiness record and stores the same record in PostgreSQL's
+`aura_portable_seed` table. It contains corpus and protocol fingerprints,
+migration and MiniLM revisions, verified model manifest digest, resource
+identities, and the logical-to-runtime mappings. Vector digests hash the
+read-back float32 values. Repeat seeding verifies SQL rows and the full
+Qdrant collection against that record and returns identical readiness for
+the intact stack. There are no relevance judgments or benchmark scores.
+
+### Recovery and limitations
+
+If startup is interrupted, run `seed_lifecycle stop` with the original
+ownership file. When Docker completed only part of creation, the command
+uses the reserved execution label to inspect and record owned resources
+before removing them. After interrupted teardown, rerun the same stop
+command. A missing, altered, or inconsistent record or an unexpected
+resource makes cleanup stop. Preserve those resources for inspection.
+Choose a fresh state path and project after investigation. Do not edit
+the record to make it match a replacement.
+
+SQL and Qdrant do not share a transaction. If indexing succeeded but SQL
+did not commit, the seeder rejects the orphaned collection on the next
+run. If SQL committed but stdout was lost, repeat seeding verifies and
+returns the recorded readiness. Detected replacement never triggers
+automatic deletion. Stopping a container discards its temporary data.
+
+The checks assume a trusted Docker daemon, host, and ownership-file
+directory. Non-cooperating Docker operations can race between inspection
+and creation, so startup refuses ambiguity and leaves resources for
+inspection. A service can also stop after final verification. The seeder
+cannot make container lifetime, Qdrant writes, and SQL commit atomic.
+Docker administrators can change container internals and are outside this
+boundary. CPU libraries, PyMuPDF, and Qdrant versions can affect PDF bytes
+or float representations. Logical passage identity does not depend on
+bitwise equality of embeddings across environments.
+
+### Opt-in live verification
+
+Default core CI collects the service-independent regressions without
+PostgreSQL. For the actual Docker tests, use the lifecycle command twice
+with distinct ownership paths and ports `15432/16333` and
+`15433/16343`. Keep both stacks fresh. Set the following environment
+variables:
+
+- `AURA_BENCHMARK_TEST_CONTEXT` to the local Docker context.
+- `AURA_BENCHMARK_TEST_PROJECT`, `AURA_BENCHMARK_TEST_PG_PORT`, and
+  `AURA_BENCHMARK_TEST_QDRANT_PORT` to the first ownership record's values.
+- The same three names with `_SECOND` appended to the second record's values.
+- `AURA_BENCHMARK_TEST_MODEL_DIR` to the verified MiniLM directory.
+
+```bash
+python -m pytest -q --strict-markers -m portable_benchmark_live \
+  evaluation/portable_benchmark/integration_tests
+```
+
+The suite checks initial and repeat seeding, SQL-to-Qdrant consistency,
+independent runtime mappings, canary preservation, project collisions,
+and Qdrant replacement on the original port with the original key.
+The two lifecycle regression tests create and remove their own
+disposable resources. Use the two original ownership records to stop
+the operator-provisioned stacks after verification.

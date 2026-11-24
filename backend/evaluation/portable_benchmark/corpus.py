@@ -102,7 +102,7 @@ def render_pdf(source: str, extraction: ExtractionSpec) -> bytes:
         return document.tobytes(deflate=True, no_new_id=True)
 
 
-def passage_catalog(manifest: CorpusManifest, sources: dict[str, str]) -> list[Passage]:
+def passages_for_pages(manifest: CorpusManifest, document_key: str, pages: list[dict]) -> list[Passage]:
     expected_version = manifest.chunking.tokenizer_package_version
     if version("tiktoken") != expected_version:
         raise ValueError(f"Passage protocol requires tiktoken {expected_version}")
@@ -113,29 +113,34 @@ def passage_catalog(manifest: CorpusManifest, sources: dict[str, str]) -> list[P
         encoding_name=manifest.chunking.tokenizer,
     )
     protocol = protocol_fingerprint(manifest)
+    segments = classifier.annotate_pages(pages)
+
+    def section_on_page(segment):
+        return segment["page_number"], segment["section"], segment["retrievable"]
+
+    joined = [
+        {
+            "page_number": number,
+            "section": section,
+            "retrievable": retrievable,
+            "text": " ".join(segment["text"] for segment in group),
+        }
+        for (number, section, retrievable), group in groupby(segments, section_on_page)
+    ]
+    return [
+        Passage(logical_passage_id(document_key, protocol, chunk.chunk_index, chunk.text), chunk)
+        for chunk in chunker.chunk_pages(joined)
+    ]
+
+
+def passage_catalog(manifest: CorpusManifest, sources: dict[str, str]) -> list[Passage]:
     catalog = []
     for document in sorted(manifest.documents, key=lambda spec: spec.key):
         pages = [
             {"page_number": number, "text": "\n".join(lines)}
             for number, lines in enumerate(layout_pages(sources[document.key], manifest.extraction), 1)
         ]
-        segments = classifier.annotate_pages(pages)
-
-        def section_on_page(segment):
-            return segment["page_number"], segment["section"], segment["retrievable"]
-
-        joined = [
-            {
-                "page_number": number,
-                "section": section,
-                "retrievable": retrievable,
-                "text": " ".join(segment["text"] for segment in group),
-            }
-            for (number, section, retrievable), group in groupby(segments, section_on_page)
-        ]
-        for chunk in chunker.chunk_pages(joined):
-            passage_id = logical_passage_id(document.key, protocol, chunk.chunk_index, chunk.text)
-            catalog.append(Passage(passage_id, chunk))
+        catalog.extend(passages_for_pages(manifest, document.key, pages))
     return catalog
 
 
