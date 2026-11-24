@@ -50,6 +50,74 @@ jobs:
       - name: Run core backend tests
         run: python -m pytest -q --strict-markers -m "not live_qdrant and not real_embedding_model"
 
+  backend-integration:
+    name: Backend integration tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: sqlite://
+      ENVIRONMENT: development
+      HF_HUB_DISABLE_XET: "1"
+
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.20.0@sha256:9bfc89f9914fc14876a88c05270685921a55b8877b254a98bcc1cc2f0a424cd2
+        ports:
+          - "6333:6333"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Wait for Qdrant readiness
+        run: |
+          if ! curl --fail --silent --show-error --max-time 2 \
+            --retry 20 --retry-all-errors --retry-delay 2 --retry-max-time 45 \
+            --output /dev/null http://localhost:6333/readyz; then
+            echo "::error::Qdrant did not become ready at http://localhost:6333/readyz."
+            exit 1
+          fi
+
+      - name: Set the embedding model directory
+        run: echo "AURA_TEST_EMBEDDING_MODEL=$RUNNER_TEMP/aura-minilm" >> "$GITHUB_ENV"
+
+      - name: Cache the integration embedding model
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.AURA_TEST_EMBEDDING_MODEL }}
+          key: ${{ runner.os }}-${{ runner.arch }}-aura-minilm-${{ hashFiles('backend/tests/prepare_embedding_model.py', 'backend/tests/embedding_model_manifest.json') }}
+
+      - name: Prepare and validate the pinned embedding model
+        timeout-minutes: 6
+        run: python tests/prepare_embedding_model.py "$AURA_TEST_EMBEDDING_MODEL"
+
+      - name: Run the backend integration tests
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: python -m pytest -q --strict-markers -m "live_qdrant or real_embedding_model"
+
+      - name: Print Qdrant logs on failure
+        if: ${{ failure() && job.services.qdrant.id != '' }}
+        env:
+          QDRANT_CONTAINER_ID: ${{ job.services.qdrant.id }}
+        run: docker logs --tail 100 "$QDRANT_CONTAINER_ID"
+
   frontend:
     name: Frontend production build
     runs-on: ubuntu-24.04

@@ -1,6 +1,10 @@
+import os
+from pathlib import Path
+
 import pytest
 
 from app.embeddings.embedding_service import EmbeddingService
+from prepare_embedding_model import validate_model
 
 
 pytestmark = pytest.mark.real_embedding_model
@@ -8,7 +12,14 @@ pytestmark = pytest.mark.real_embedding_model
 
 @pytest.fixture(scope="module")
 def embedding_service():
-    return EmbeddingService()
+    local_model = os.environ.get("AURA_TEST_EMBEDDING_MODEL")
+    if not local_model:
+        pytest.fail("Set AURA_TEST_EMBEDDING_MODEL to a prepared model directory.", pytrace=False)
+
+    model_path = validate_model(Path(local_model))
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(EmbeddingService, "MODEL_NAME", str(model_path))
+        return EmbeddingService()
 
 
 def test_single_text_embedding(embedding_service):

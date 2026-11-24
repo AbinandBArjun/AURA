@@ -1,4 +1,8 @@
+from contextlib import contextmanager
+from uuid import uuid4
+
 import pytest
+from qdrant_client import models
 
 from app.vector_store.qdrant_service import QdrantService
 
@@ -22,23 +26,34 @@ class FakeEmbeddingService:
         return [self.embed_text(text) for text in texts]
 
 
+@contextmanager
+def isolated_collection(service):
+    name = f"aura_test_chunks_{uuid4().hex}"
+    service.COLLECTION_NAME = name
+    try:
+        created = service.client.create_collection(
+            collection_name=name,
+            vectors_config=models.VectorParams(
+                size=service.VECTOR_SIZE, distance=models.Distance.COSINE
+            ),
+        )
+        if created is not True:
+            raise RuntimeError(f"Could not create isolated Qdrant test collection {name}")
+
+        try:
+            service.ensure_collection()
+            yield service
+        finally:
+            service.client.delete_collection(name)
+    finally:
+        service.client.close()
+
+
 @pytest.fixture
 def qdrant_service():
-    service = QdrantService(
-        embedding_service=FakeEmbeddingService()
-    )
-
-    # Use a dedicated test collection.
-    service.COLLECTION_NAME = "aura_test_chunks"
-
-    service.ensure_collection()
-
-    yield service
-
-    if service.client.collection_exists(service.COLLECTION_NAME):
-        service.client.delete_collection(service.COLLECTION_NAME)
-
-    service.client.close()
+    service = QdrantService(embedding_service=FakeEmbeddingService())
+    with isolated_collection(service):
+        yield service
 
 
 def test_collection_creation(qdrant_service):
