@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import replace
 from hashlib import sha256
 import json
 from types import SimpleNamespace
@@ -269,6 +270,136 @@ def test_reviewed_report_macro_aggregation():
     assert result.quality.recall_at_k == pytest.approx(0.5)
     assert result.category_quality["economics"].mrr_at_k == 1.0
     assert result.category_quality["software-engineering"].ndcg_at_k == 0.0
+
+
+def ai_assisted_dataset_payload(*, reviewed=True):
+    payload = dataset_for_report(reviewed=True).model_dump()
+    payload["schema_version"] = 2
+    payload["review_status"] = "reviewed" if reviewed else "draft"
+    record = payload["queries"][0]["judgments"][0]
+    record.update(
+        method="ai-assisted",
+        assessor_id="ai-assessor-fixture",
+        ai_provenance={"provider": "Synthetic provider", "tool": "Synthetic tool", "model": "Synthetic model"},
+    )
+    if reviewed:
+        record["human_review"] = {
+            "reviewer_kind": "human", "decision": "approved",
+            "approved_on": "2026-01-01", "approval_reference": "synthetic-approval-fixture",
+        }
+    else:
+        record.update(review_status="pending", reviewer_id=None)
+    return payload
+
+
+def test_v1_human_provenance_retains_canonical_payload_and_report_validation():
+    dataset = dataset_for_report(reviewed=True)
+    record = {
+        "passage_id": logical(0), "grade": 3, "method": "human", "assessor_id": "assessor",
+        "review_status": "reviewed", "reviewer_id": "reviewer",
+    }
+    expected = {
+        "schema_version": 1, "corpus_fingerprint": CORPUS, "review_status": "reviewed",
+        "queries": [
+            {"query_id": "one", "category": "economics", "query": "text", "judgments": [record]},
+            {"query_id": "two", "category": "software-engineering", "query": "text",
+             "judgments": [record | {"passage_id": logical(9), "grade": 1}]},
+        ],
+    }
+    canonical = json.dumps(expected, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    assert dataset.model_dump() == expected
+    assert run_benchmark.dataset_fingerprint(dataset) == sha256(canonical.encode("ascii")).hexdigest()
+    report = make_report(reviewed=True)
+    assert ranking_report.validate_report(report.model_dump_json(), report_context(reviewed=True)) == report
+
+
+def test_ai_assisted_provenance_preserves_report_protocol_and_requires_matching_fingerprint():
+    dataset = PortableDataset.model_validate(ai_assisted_dataset_payload())
+    original_context = report_context(reviewed=True)
+    context = replace(original_context, dataset=dataset)
+    report = make_report(reviewed=True)
+    payload = report.model_dump()
+    payload["dataset_fingerprint"] = run_benchmark.dataset_fingerprint(dataset)
+    data = json.dumps(payload)
+    validated = ranking_report.validate_report(data, context)
+    assert validated.schema_version == report.schema_version == 1
+    assert validated.evaluation_protocol == report.evaluation_protocol == "aura-portable-retrieval-v1"
+    assert validated.results == report.results
+    assert dataset.queries[0].judgments[0].ai_provenance.model_revision is None
+    with pytest.raises(ValueError, match="dataset does not match trusted inputs"):
+        ranking_report.validate_report(data, original_context)
+
+
+@pytest.mark.parametrize(("field", "value", "diagnostic"), [
+    ("reviewer_id", None, "different reviewer"),
+    ("reviewer_id", "ai-assessor-fixture", "different reviewer"),
+    ("human_review", None, "requires human approval"),
+    ("human_review", {}, "Field required"),
+    ("ai_provenance", None, "requires AI assessor provenance"),
+    ("ai_provenance", {"provider": "Synthetic provider"}, "Field required"),
+    ("ai_provenance", {"provider": "Synthetic", "tool": "Synthetic", "model_revision": "test"}, "model name"),
+    ("method", "ai", "ai-assisted"),
+    ("method", "human", "require the ai-assisted method"),
+])
+def test_ai_assisted_judgment_requires_declared_provenance_and_review(field, value, diagnostic):
+    payload = ai_assisted_dataset_payload()
+    payload["queries"][0]["judgments"][0][field] = value
+    with pytest.raises(ValueError, match=diagnostic):
+        PortableDataset.model_validate(payload)
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("reviewer_kind", "ai"), ("decision", "pending"),
+    ("approved_on", "2026-02-30"), ("approval_reference", " "),
+])
+def test_ai_assisted_approval_requires_valid_human_declarations(field, value):
+    payload = ai_assisted_dataset_payload()
+    payload["queries"][0]["judgments"][0]["human_review"][field] = value
+    with pytest.raises(ValueError, match=field):
+        PortableDataset.model_validate(payload)
+
+
+def test_ai_assisted_draft_rejects_quality_mode_and_cannot_claim_reviewed_status():
+    payload = ai_assisted_dataset_payload(reviewed=False)
+    dataset = PortableDataset.model_validate(payload)
+    ranking_report.validate_mode(dataset, "ranking-only")
+    with pytest.raises(ValueError, match="quality for reviewed datasets"):
+        ranking_report.validate_mode(dataset, "quality")
+    payload["review_status"] = "reviewed"
+    with pytest.raises(ValueError, match="pending judgments"):
+        PortableDataset.model_validate(payload)
+
+
+def test_pending_ai_assessment_cannot_include_an_approval():
+    payload = ai_assisted_dataset_payload()
+    payload["review_status"] = "draft"
+    payload["queries"][0]["judgments"][0].update(review_status="pending", reviewer_id=None)
+    with pytest.raises(ValueError, match="cannot declare human approval"):
+        PortableDataset.model_validate(payload)
+
+
+def test_dataset_rejects_ai_as_reviewer_on_another_judgment():
+    payload = ai_assisted_dataset_payload()
+    payload["queries"][1]["judgments"][0]["reviewer_id"] = "ai-assessor-fixture"
+    with pytest.raises(ValueError, match="declared AI assessor cannot be a reviewer"):
+        PortableDataset.model_validate(payload)
+
+
+@pytest.mark.parametrize("version", [1, True, 3])
+def test_ai_assisted_judgments_require_dataset_version_two(version):
+    with pytest.raises(ValueError, match="version"):
+        PortableDataset.model_validate(ai_assisted_dataset_payload() | {"schema_version": version})
+
+
+@pytest.mark.parametrize(("section", "field", "value"), [
+    ("ai_provenance", "tool", "Another synthetic tool"),
+    ("human_review", "approval_reference", "another-synthetic-approval-fixture"),
+])
+def test_assessment_provenance_changes_dataset_fingerprint(section, field, value):
+    payload = ai_assisted_dataset_payload()
+    original = run_benchmark.dataset_fingerprint(PortableDataset.model_validate(payload))
+    payload["queries"][0]["judgments"][0][section][field] = value
+    assert run_benchmark.dataset_fingerprint(PortableDataset.model_validate(payload)) != original
 
 
 @pytest.mark.parametrize("defect", ["quality", "duplicate", "unknown-protocol", "runtime-key", "query-set", "model"])

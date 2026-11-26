@@ -114,13 +114,33 @@ the defined extraction or chunking behavior requires a new protocol version.
 Database document IDs, chunk IDs, and Qdrant point IDs are runtime mappings
 in a seed readiness record.
 
-**Dataset schema v1.** The dataset supplies a matching corpus fingerprint,
-a draft or reviewed status, and unique query IDs with a category and text.
-Each judgment supplies a catalog passage ID, a grade from 0 to 3, human
-provenance through an assessor ID, and review status. A reviewed judgment
+**Dataset schemas v1 and v2.** The dataset supplies a matching corpus
+fingerprint, a draft or reviewed status, and unique query IDs with a category
+and text. Each judgment supplies a catalog passage ID, a grade from 0 to 3,
+an assessment method, an assessor ID, and review status. A reviewed judgment
 requires a different reviewer ID. Zero is an explicit non-relevance decision.
 An empty judgment list leaves the query unjudged. References to a different
 corpus, unknown passages, and excluded passages fail validation.
+
+Version 1 supports the original `method: "human"` judgment format. Version 2
+also supports `method: "ai-assisted"`. For that method, `assessor_id` identifies
+the AI assessor and `ai_provenance` records its `provider` and `tool`. Include
+`model` and `model_revision` only when known. A pending judgment leaves both
+`reviewer_id` and `human_review` unset. After an actual human verifies the
+judgment and approves the grade, record their identity in `reviewer_id` and
+add `human_review` with `reviewer_kind: "human"`, `decision: "approved"`,
+`approved_on` (a calendar date in YYYY-MM-DD format), and
+`approval_reference` (a reference to the retained approval record). The
+dataset rejects any reviewer ID also declared as an AI assessor in the dataset.
+Keep the underlying review record and use a reference suitable for publishing.
+Validation checks the structure and consistency of these declarations.
+Authenticating the reviewer and verifying that they performed and approved the
+review remain the responsibility of the dataset owner.
+
+Version 1 datasets retain their canonical fingerprints. Version 2 includes
+the AI and human review declarations in the dataset fingerprint. The report
+schema and evaluation protocol keep their existing versions because their
+format and scoring rules are unchanged.
 
 ## Review and subsequent checkpoints
 
@@ -373,8 +393,9 @@ latency. Quality fields are absent. Once judgments have been reviewed,
 provide a separate dataset with the same 36 query IDs, texts, categories
 and ordering. Set the dataset and each recorded judgment to `reviewed`,
 use a reviewer distinct from the assessor, and record at least one
-positive grade per query. The corpus fingerprint and all judged passage
-IDs must validate. For future reviewed runs, use the same command with
+positive grade per query. AI-assisted judgments also require the version 2
+provenance and human approval described above. The corpus fingerprint and
+all judged passage IDs must validate. For future reviewed runs, use the same command with
 `--mode quality --dataset /absolute/path/to/reviewed.json` and
 `--dataset-sha256 <canonical-dataset-sha256>` plus a new output path.
 Use `run_benchmark.dataset_fingerprint` on the validated `PortableDataset` to

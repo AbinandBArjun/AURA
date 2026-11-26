@@ -1,9 +1,14 @@
+from datetime import date
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, StringConstraints,
+    field_validator, model_serializer, model_validator,
+)
 
 
 VersionOne = Annotated[int, Field(ge=1, le=1)]
+DatasetVersion = Annotated[int, Field(ge=1, le=2)]
 Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
 Digest = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 NonemptyText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -68,13 +73,41 @@ class CorpusManifest(StrictModel):
         return self
 
 
+class AIProvenance(StrictModel):
+    provider: NonemptyText
+    tool: NonemptyText
+    model: NonemptyText | None = None
+    model_revision: NonemptyText | None = None
+
+    @model_validator(mode="after")
+    def revision_requires_model(self) -> Self:
+        if self.model_revision is not None and self.model is None:
+            raise ValueError("AI model revision requires a model name")
+        return self
+
+
+class HumanReview(StrictModel):
+    reviewer_kind: Literal["human"]
+    decision: Literal["approved"]
+    approved_on: Annotated[str, StringConstraints(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")]
+    approval_reference: NonemptyText
+
+    @field_validator("approved_on")
+    @classmethod
+    def valid_approval_date(cls, value: str) -> str:
+        date.fromisoformat(value)
+        return value
+
+
 class Judgment(StrictModel):
     passage_id: PassageID
     grade: Annotated[int, Field(ge=0, le=3)]
-    method: Literal["human"]
+    method: Literal["human", "ai-assisted"]
     assessor_id: Slug
     review_status: Literal["pending", "reviewed"]
     reviewer_id: Slug | None = None
+    ai_provenance: AIProvenance | None = None
+    human_review: HumanReview | None = None
 
     @model_validator(mode="after")
     def independent_review(self) -> Self:
@@ -83,7 +116,26 @@ class Judgment(StrictModel):
                 raise ValueError("Reviewed judgment requires a different reviewer")
         elif self.reviewer_id is not None:
             raise ValueError("Pending judgment cannot name a reviewer")
+
+        if self.method == "human":
+            if self.model_fields_set & {"ai_provenance", "human_review"}:
+                raise ValueError("AI provenance and human approval fields require the ai-assisted method")
+        elif self.ai_provenance is None:
+            raise ValueError("AI-assisted judgment requires AI assessor provenance")
+        elif self.review_status == "reviewed" and self.human_review is None:
+            raise ValueError("Reviewed AI-assisted judgment requires human approval")
+        elif self.review_status == "pending" and self.human_review is not None:
+            raise ValueError("Pending AI-assisted judgment cannot declare human approval")
         return self
+
+    @model_serializer(mode="wrap")
+    def preserve_human_payload(self, handler: SerializerFunctionWrapHandler):
+        payload = handler(self)
+        if self.method == "human":
+            # Preserve the serialized field set used by existing dataset fingerprints.
+            payload.pop("ai_provenance", None)
+            payload.pop("human_review", None)
+        return payload
 
 
 class Query(StrictModel):
@@ -101,7 +153,7 @@ class Query(StrictModel):
 
 
 class PortableDataset(StrictModel):
-    schema_version: VersionOne
+    schema_version: DatasetVersion
     corpus_fingerprint: Digest
     review_status: Literal["draft", "reviewed"]
     queries: Annotated[list[Query], Field(min_length=1)]
@@ -111,6 +163,12 @@ class PortableDataset(StrictModel):
         ids = [query.query_id for query in self.queries]
         if len(ids) != len(set(ids)):
             raise ValueError("Duplicate query ID")
+        judgments = [judgment for query in self.queries for judgment in query.judgments]
+        ai_assessors = {judgment.assessor_id for judgment in judgments if judgment.method == "ai-assisted"}
+        if ai_assessors and self.schema_version == 1:
+            raise ValueError("AI-assisted judgments require dataset schema version 2")
+        if any(judgment.reviewer_id in ai_assessors for judgment in judgments):
+            raise ValueError("A declared AI assessor cannot be a reviewer in the same dataset")
         if self.review_status == "reviewed":
             for query in self.queries:
                 if not any(judgment.grade > 0 for judgment in query.judgments):
