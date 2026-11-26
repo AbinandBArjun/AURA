@@ -1,6 +1,7 @@
 import argparse
 from dataclasses import dataclass
 from hashlib import sha256
+from math import isfinite
 from importlib.metadata import version
 from itertools import groupby
 import json
@@ -25,16 +26,29 @@ class Passage:
     chunk: TextChunk
 
 
-def read_json(path: Path):
+def decode_json(data, source="Report"):
     def unique_keys(pairs):
         result = {}
         for key, value in pairs:
             if key in result:
-                raise ValueError(f"{path.name}: duplicate JSON key {key!r}")
+                raise ValueError(f"{source}: duplicate JSON key {key!r}")
             result[key] = value
         return result
 
-    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_keys)
+    def nonfinite(value):
+        raise ValueError(f"{source}: nonfinite JSON number {value!r}")
+
+    def finite_float(value):
+        number = float(value)
+        if not isfinite(number):
+            nonfinite(value)
+        return number
+
+    return json.loads(data, object_pairs_hook=unique_keys, parse_constant=nonfinite, parse_float=finite_float)
+
+
+def read_json(path: Path):
+    return decode_json(path.read_text(encoding="utf-8"), path.name)
 
 
 def json_digest(value) -> str:
@@ -144,8 +158,11 @@ def passage_catalog(manifest: CorpusManifest, sources: dict[str, str]) -> list[P
     return catalog
 
 
-def load_dataset(root: Path, manifest: CorpusManifest, catalog: list[Passage]) -> PortableDataset:
-    dataset = PortableDataset.model_validate(read_json(root / "dataset.json"))
+def load_dataset(
+    root: Path, manifest: CorpusManifest, catalog: list[Passage], *, dataset_path: Path | None = None,
+) -> PortableDataset:
+    path = dataset_path if dataset_path is not None else root / "dataset.json"
+    dataset = PortableDataset.model_validate(read_json(path))
     if dataset.corpus_fingerprint != manifest.corpus_fingerprint:
         raise ValueError("Dataset corpus fingerprint mismatch")
 

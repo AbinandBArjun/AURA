@@ -141,7 +141,7 @@ def read_corpus(session, corpus, identity):
     return owner.id, workspace.id, document_rows, point_payloads
 
 
-def seed_transaction(connection, client, targets, corpus, model_manifest, make_embedding):
+def seed_transaction(connection, client, targets, corpus, model_manifest, make_embedding=None, *, require_ready=False):
     targets.verify_current_identity(connection)
     connection.exec_driver_sql("SET LOCAL search_path TO public")
     connection.exec_driver_sql("SET LOCAL statement_timeout TO '30s'")
@@ -155,7 +155,11 @@ def seed_transaction(connection, client, targets, corpus, model_manifest, make_e
     tables = set(inspect(connection).get_table_names(schema="public"))
     if existing != (SEED_STATE.name in tables):
         raise SeedError("PostgreSQL readiness and Qdrant collection disagree. Use a fresh benchmark project")
+    if require_ready and not existing:
+        raise SeedError("The portable runner requires an existing seeded benchmark workspace")
     saved = current_seed(connection, config, revision)
+    if require_ready and saved is None:
+        raise SeedError("The verified benchmark readiness record is missing")
     with Session(bind=connection) as session:
         if saved is None:
             insert_corpus(session, corpus)

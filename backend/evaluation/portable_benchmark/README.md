@@ -237,7 +237,7 @@ migration and MiniLM revisions, verified model manifest digest, resource
 identities, and the logical-to-runtime mappings. Vector digests hash the
 read-back float32 values. Repeat seeding verifies SQL rows and the full
 Qdrant collection against that record and returns identical readiness for
-the intact stack. There are no relevance judgments or benchmark scores.
+the intact stack. Seeding does not create relevance judgments or benchmark scores.
 
 ### Recovery and limitations
 
@@ -291,3 +291,173 @@ and Qdrant replacement on the original port with the original key.
 The two lifecycle regression tests create and remove their own
 disposable resources. Use the two original ownership records to stop
 the operator-provisioned stacks after verification.
+
+## Run portable retrieval
+
+Seed a disposable stack using the lifecycle commands above and keep it
+running. The runner requires the explicit Docker context, project and
+ports from that stack. It verifies the frozen corpus, the selected
+dataset, the pinned models, and the readiness record against live
+PostgreSQL rows and Qdrant points. Evaluation runs under a read-only
+repeatable-read SQL transaction with the seeder advisory lock. Qdrant
+queries use the seeder's container-bound transport. The runner verifies
+the full seed and service identities again before publishing results.
+
+### Prepare and use the offline models
+
+From `backend`, prepare the embedding model as shown above and prepare
+the separate reranker in a trusted directory outside the repository.
+
+```bash
+python -m evaluation.portable_benchmark.reranker_assets \
+  --model-dir /absolute/path/to/aura-benchmark-reranker
+```
+
+The reranker is `cross-encoder/ms-marco-MiniLM-L-6-v2` at revision
+`233902d25c440f23af6f7d6e94d2946bac0bee0a`. Its manifest lists six
+inference files and their SHA-256 digests. The Safetensors digest was
+checked against the upstream LFS digest and the five smaller files
+against the upstream Git blob IDs before recording their SHA-256
+digests. Preparation downloads only those files and validates them on
+first use and reuse. Both models revalidate their assets before loading
+from local paths on CPU with remote code disabled. Cold model preparation
+and a cold `tiktoken` vocabulary cache can require public downloads.
+
+Run against the 36 checked-in draft queries after seeding. Keep the
+same `$project` and retained ownership file from the lifecycle example.
+
+```bash
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+python -m evaluation.portable_benchmark.run_benchmark \
+  --docker-context default --project "$project" --postgres-port 15432 --qdrant-port 16333 \
+  --embedding-model-dir /absolute/path/to/aura-benchmark-minilm \
+  --reranker-model-dir /absolute/path/to/aura-benchmark-reranker \
+  --mode ranking-only --output /absolute/path/to/reports/aura-portable-ranks.json
+```
+
+In PowerShell, use `$stack.context`, `$stack.project`,
+`$stack.postgres_port` and `$stack.qdrant_port` from the ownership
+record. Set `$env:HF_HUB_OFFLINE = '1'` and
+`$env:TRANSFORMERS_OFFLINE = '1'` before invoking Python. To shut down,
+use `seed_lifecycle stop` with the retained ownership file.
+
+### Retrieval and logical ordering
+
+| Default profile | Candidate selection |
+| --- | --- |
+| `dense` | Qdrant cosine similarity |
+| `hybrid` | Dense and production BM25 rankings combined by reciprocal rank fusion, pool 20 |
+| `hybrid_rerank_5` | Fused pool of 5, scored by the cross-encoder |
+| `hybrid_rerank_10` | Fused pool of 10, scored by the cross-encoder |
+| `hybrid_rerank_20` | Fused pool of 20, scored by the cross-encoder |
+
+`--top-k` defaults to 5. `--hybrid-pool` defaults to the greater of
+20 and four times top-k, capped at the retrievable corpus size.
+`--rerank-pools 5 10 20` sets three distinct increasing pools. Each
+pool must be between top-k and the retrievable corpus size.
+
+The runner reuses the production search orchestration, BM25, fusion
+and cross-encoder. For evaluation it requests exact dense scores for
+all verified points and collects all BM25 matches before their cutoffs.
+It sorts equal scores by logical passage ID, uses that ID for fusion,
+and breaks equal reranker scores the same way. Each returned runtime
+chunk or point must match its readiness mapping and expected payload.
+Exhaustive dense retrieval is appropriate for this 40-passage corpus.
+Different runtime IDs do not affect tie ordering. CPU libraries and
+near-ties can still change scores or ranks across platforms.
+
+### Reviewed datasets and metrics
+
+Ranking-only reports contain logical rankings, scores and diagnostic
+latency. Quality fields are absent. Once judgments have been reviewed,
+provide a separate dataset with the same 36 query IDs, texts, categories
+and ordering. Set the dataset and each recorded judgment to `reviewed`,
+use a reviewer distinct from the assessor, and record at least one
+positive grade per query. The corpus fingerprint and all judged passage
+IDs must validate. For future reviewed runs, use the same command with
+`--mode quality --dataset /absolute/path/to/reviewed.json` and
+`--dataset-sha256 <canonical-dataset-sha256>` plus a new output path.
+Use `run_benchmark.dataset_fingerprint` on the validated `PortableDataset` to
+derive the digest. It covers compact, sorted-key JSON with non-ASCII
+characters escaped, including judgment metadata and review state.
+
+Grades 1–3 count as relevant for Precision@K, Recall@K and MRR@K.
+Precision divides by K, Recall divides by the number of positively
+judged passages for the query, and MRR uses the first positive hit
+within K. nDCG@K uses grades 0–3 with gain `2**grade - 1` and ideal
+ordering from the judged grades. Unjudged retrieved passages contribute
+zero gain. Queries without a positive judgment are rejected. Results
+include equal-weight per-query averages overall and within categories.
+
+### Reports, recovery, and limitations
+
+Report schema 1 records the corpus and dataset fingerprints and review
+status, passage and evaluation protocols, retrieval configuration,
+both model revisions and their manifest digests, software versions and
+platform, query and category IDs, and ranked logical passage IDs.
+Latency is diagnostic and includes retrieval overhead such as Docker
+transport and cache warmup.
+
+Validation requires independent expectations. From `backend`, use
+`run_benchmark.load_report_context("ranking-only")` for the default
+configuration and pass that context with the report bytes to
+`ranking_report.validate_report(data, context)` or
+`BenchmarkReport.model_validate_json(data, context=context)`. Both reject
+duplicate keys and nonfinite numbers before schema validation. Generic
+Pydantic JSON adapters cannot validate a portable report directly.
+Supply custom parameters or a reviewed dataset and its canonical SHA-256
+to the context loader from the original run configuration. Do not derive them from the report
+under review. The loader revalidates the corpus, frozen passage catalog,
+dataset, and pinned model manifests. Default reports require all 180
+query/profile combinations and exact query categories. Every ranking
+must use known logical passage IDs, finite scores, and the declared
+score and tie order. Quality validation recomputes each query's metrics
+from reviewed judgments and derives both macro averages and category
+counts from those recomputed scores. Metric fields may differ by at most
+`1e-12` absolute, and counts and category membership must agree exactly.
+Ranking-only reports have no quality fields.
+
+Choose a new `.json` filename in an existing local directory you control,
+outside the historical datasets and results directories. The runner
+writes, flushes, reads back, and validates the same file handle used for
+publication. On Windows, native handles pin the directory and its
+ancestors against rename and deletion. The staged file is opened
+exclusively, and the final rename and any failure cleanup operate by
+handle. On Linux, directory descriptors disallow links during traversal.
+The runner stages an unnamed inode and links it into the verified
+directory without overwriting. The publisher owns the staging descriptor
+and lends it to the stream, so a failed stream setup closes the
+descriptor and removes any owned Windows staging file. Linux requires
+a local filesystem with
+`O_TMPFILE` support and accessible `/proc/self/fd`. Unsupported filesystems
+fail without falling back to path-based publication.
+
+On Linux, a directory rename after the final identity check can move
+the published name with the original directory. It cannot redirect
+publication to a replacement directory or substitute a staged path.
+Do not grant unrelated processes write access to the report directory.
+These checks do not defend against a privileged process or an actor
+allowed to alter the output after publication. An interruption before
+publication leaves no final report. Abrupt termination can leave a
+randomly named `.aura-report-*.tmp` on Windows. Remove such a file only
+after confirming the runner that owns it has stopped.
+
+Runner diagnostics identify the failed phase. Model validation can name
+the model and an expected relative asset. The CLI suppresses raw nested
+exceptions and library progress so error output does not include local
+paths, connection details, or credentials. A collision or failed run
+returns nonzero.
+
+For failed asset verification, move the invalid model directory aside
+and prepare a fresh destination. On incomplete readiness, an identity
+change or inconsistent vectors, inspect the original ownership record
+and follow the lifecycle recovery instructions above. SQL and Qdrant
+do not share a snapshot. A concurrent out-of-band change that is fully
+reverted between checks can evade the before-and-after comparisons.
+The historical v0.2 regression checker uses a separate report format.
+No portable quality baseline is approved in this checkpoint.
+
+For the opt-in ranking test, also set
+`AURA_BENCHMARK_TEST_RERANKER_DIR` to the prepared reranker directory.
+The ranking test creates and cleans up two independent stacks through
+the lifecycle command and compares their logical rankings.
