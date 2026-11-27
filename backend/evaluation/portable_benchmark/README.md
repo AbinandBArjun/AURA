@@ -2,7 +2,7 @@
 
 This corpus is a separate benchmark foundation. The historical v0.2 labels and
 results refer to database IDs and a workspace whose exact corpus is unavailable
-in the repository. Portable judgments will refer to logical passage IDs. Scores
+in the repository. Portable judgments refer to logical passage IDs. Scores
 from the two corpora require separate baselines.
 
 ## Corpus and provenance
@@ -38,6 +38,9 @@ validity for real research collections, scans, or document layouts.
 - `manifest.json` records corpus identity, source provenance, checksums, and the
   extraction and chunking protocols.
 - `dataset.json` contains draft queries and empty judgment lists.
+- [`dataset.reviewed.json`](dataset.reviewed.json) contains the exhaustive schema v2 judgments.
+- [`review_approval.json`](review_approval.json) records the owner approval, source workbook hash,
+  confirmed query interpretations, and 41 resolved alternatives.
 - `schema.py` defines the strict, versioned manifest and dataset schemas.
   `CorpusManifest.model_json_schema()` and `PortableDataset.model_json_schema()`
   expose their structural JSON Schemas. Runtime validation adds uniqueness,
@@ -142,16 +145,69 @@ the AI and human review declarations in the dataset fingerprint. The report
 schema and evaluation protocol keep their existing versions because their
 format and scoring rules are unchanged.
 
-## Review and subsequent checkpoints
+## Human-verified relevance judgments
 
-For future judgments, have an assessor record 0 for irrelevant, 1 for
-marginally relevant, 2 for relevant, or 3 for highly relevant. A separate
-reviewer checks the passage in context and adjudicates disagreements,
-including plausible distractors. The reviewed dataset requires at least one
-positive judgment per query and every recorded judgment to be reviewed.
-This checkpoint includes no final judgments or scores.
+Codex proposed a grade for every pair of the 36 committed queries and 40
+eligible passages from eight synthetic documents. The project owner verified
+individual passages and groups of zero-grade judgments, resolved all 41
+flagged alternatives, and approved the complete dataset on 2026-11-27 with
+zero grade changes. The approval record includes the owner's exact statement
+as supplied in the project handoff. Flag rationales in that record come from
+the AI draft. The human decision for each flagged alternative was to retain
+the proposed grade. This workflow used one human reviewer verifying an AI
+draft, so it provides no independent inter-annotator agreement measurement.
 
-Run and review a portable baseline only after corpus, judgment, and seeding checks pass. Keep those artifacts separate from v0.2.
+| Grade | Meaning | Judgment count |
+| --- | --- | ---: |
+| 0 | No useful evidence | 1,287 |
+| 1 | Useful indirect evidence or supporting context | 70 |
+| 2 | Direct evidence addressing a substantial part of the query | 52 |
+| 3 | Sufficient direct evidence addressing all essential parts | 31 |
+| **Total** | | **1,440** |
+
+These are annotation counts. There are 153 positive judgments and 83 with
+grades 2 or 3. The reviewed export preserves all 36 query IDs, texts,
+categories, and ordering. The original schema v1 draft remains available for
+ranking-only runs. This checkpoint produced no retrieval scores or baseline.
+
+Run the validation command from `backend`. **Workbook-free validation** checks
+the frozen corpus and draft and checks the reviewed dataset and approval record
+for structural and internal consistency. It cannot independently establish
+that every grade matches the workbook or detect every coordinated change to
+the two included files.
+
+```console
+python -m evaluation.portable_benchmark.export_reviewed_dataset
+```
+
+**Workbook-backed validation** verifies the original workbook's pinned SHA-256
+before parsing, reconciles every judgment and grade against that source, and
+checks the flagged alternatives against the workbook. This establishes
+correspondence with the hash-pinned AI draft approved by the project owner.
+Both modes require the exact approval statement and the complete interpretation
+inventory. Authenticating the reviewer or verifying that review occurred
+requires evidence outside the validator. Independent human annotation was
+outside this workflow.
+
+```console
+python -m evaluation.portable_benchmark.export_reviewed_dataset --workbook /path/to/aura-relevance-assessment-draft.xlsx --output /path/to/fresh-reviewed.json
+```
+
+Omit `--output` to compare the deterministic export without writing. Keep the
+workbook outside the repository. Use an existing, trusted local output
+directory. The exporter writes, flushes, and closes a private staging file
+before publishing it by same-volume rename on Windows or hard link on Linux.
+Publication requires filesystem support for the corresponding operation and
+fails if the destination exists, including when another process creates it
+during publication.
+Handled failures remove staging. An abrupt process termination can leave a
+`.aura-reviewed-*` staging directory. Publication does not guarantee persistence
+through a power loss.
+
+The corpus is small and synthetic, so results on it cannot establish
+real-world retrieval generalization. Passage-level metrics measure how
+individual evidence passages rank. They do not establish whether the
+retrieved set jointly covers all essential clauses of a cross-domain question.
 
 ## Seed a disposable benchmark environment
 
@@ -389,14 +445,9 @@ near-ties can still change scores or ranks across platforms.
 ### Reviewed datasets and metrics
 
 Ranking-only reports contain logical rankings, scores and diagnostic
-latency. Quality fields are absent. Once judgments have been reviewed,
-provide a separate dataset with the same 36 query IDs, texts, categories
-and ordering. Set the dataset and each recorded judgment to `reviewed`,
-use a reviewer distinct from the assessor, and record at least one
-positive grade per query. AI-assisted judgments also require the version 2
-provenance and human approval described above. The corpus fingerprint and
-all judged passage IDs must validate. For future reviewed runs, use the same command with
-`--mode quality --dataset /absolute/path/to/reviewed.json` and
+latency. Quality fields are absent. The included schema v2 dataset meets the
+judgment requirements for a future quality run. To use it, pass
+`--mode quality --dataset evaluation/portable_benchmark/dataset.reviewed.json` and
 `--dataset-sha256 <canonical-dataset-sha256>` plus a new output path.
 Use `run_benchmark.dataset_fingerprint` on the validated `PortableDataset` to
 derive the digest. It covers compact, sorted-key JSON with non-ASCII

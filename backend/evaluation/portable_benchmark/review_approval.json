@@ -1,0 +1,479 @@
+{
+  "schema_version": 1,
+  "reviewer_id": "aura-project-owner",
+  "ai_assessor_id": "openai-codex-ai-assisted-draft",
+  "decision": "approved",
+  "approved_on": "2026-11-27",
+  "assessment_method": "ai-assisted",
+  "approval_statement": "I formally approve all 1,440 reviewed relevance judgments and all 41 flagged resolutions for AURA's portable retrieval benchmark. Human reviewer ID: aura-project-owner. Approval date: 2026-11-27. Assessment method: AI-assisted, human-verified. Proceed with Checkpoint 17.4.5B dataset export and validation using Codex.",
+  "approval_source": "The project owner's explicit approval in the ChatGPT review conversation, supplied to Codex through the project owner's Checkpoint 17.4.5B handoff.",
+  "ai_provenance": {
+    "provider": "OpenAI",
+    "tool": "Codex"
+  },
+  "source_workbook": {
+    "name": "aura-relevance-assessment-draft.xlsx",
+    "sha256": "89843226a3353cf87a11e7eaa48c3643781243609abc160a27470adebb277d60"
+  },
+  "corpus_fingerprint": "e4f0f2fba8a9c2b598a260269891cde0b54d9566b0c0a68beb74443a7d700300",
+  "counts": {
+    "documents": 8,
+    "passages": 40,
+    "queries": 36,
+    "judgments": 1440,
+    "grades": {
+      "0": 1287,
+      "1": 70,
+      "2": 52,
+      "3": 31
+    },
+    "positive_judgments": 153,
+    "grades_2_or_3": 83,
+    "flags_resolved": 41,
+    "grade_changes": 0,
+    "pending_judgments": 0,
+    "unresolved_disagreements": 0,
+    "query_categories": {
+      "artificial-intelligence": 8,
+      "cybersecurity": 8,
+      "economics": 8,
+      "software-engineering": 8,
+      "cross-domain": 4
+    }
+  },
+  "review_procedure": "Codex drafted the relevance judgments using the exact queries and canonical passages. The project owner verified the proposed grades through individual passage reviews and grouped zero-grade reviews, resolved all flagged alternatives, and formally approved the complete dataset with zero grade changes. Flag reasons are AI-generated. The human decisions are recorded as retention of the proposed grades under the owner's approval.",
+  "confirmed_interpretations": {
+    "cross-01": "Accept recovery procedures, behavioral tests and outcome checks as substantive evidence for their respective domains.",
+    "cross-02": "Require coverage of both data-store isolation and independent identity-system controls. Treat role separation as supporting context rather than equivalent isolation.",
+    "cross-03": "Require cross-domain evidence. Treat direct proxy-versus-outcome distinctions as substantive evidence and measured trade-offs as supporting context.",
+    "cross-04": "Require both trade-offs for a complete answer. Keep the two mechanisms separate and treat metric-monitoring recommendations as supporting context.",
+    "ai-03": "Cover both policy precedence and conflict resolution.",
+    "ai-04": "Treat substantive automated answer release as the study's operational proxy rather than demonstrated downstream case closure.",
+    "ai-07": "Include plausible alternative explanations to investigate, particularly changed human labeling practices.",
+    "cy-01": "Distinguish employment-status approval from dataset-access approval; treat removal of old access as a related control.",
+    "cy-04": "Distinguish scheduled expiry from actual revocation and require linked timing evidence to establish timely removal.",
+    "econ-05": "A conceptual explanation is sufficient without requiring a numerical calculation.",
+    "sw-02": "Treat separate legitimate actions and repeated delivery as essential distinctions.",
+    "sw-05": "Focus on cross-store and corpus-state isolation rather than requiring every field of a complete production ranking cache key."
+  },
+  "limitations": [
+    "This is a single human verification of an AI-assisted draft. No independent inter-annotator agreement was measured.",
+    "The exact drafting model and revision were unavailable. The assessor identity records the known provider and tool.",
+    "The corpus and queries are small and synthetic, so the judgments do not establish real-world retrieval generalization.",
+    "Passage-level relevance does not measure whether a retrieved set jointly answers all clauses of a cross-domain question.",
+    "The schema validates declared provenance. The approval itself is evidenced by the project owner's provided statement. No separate human rationale is asserted for each judgment."
+  ],
+  "flagged_resolutions": [
+    {
+      "query_id": "ai-01",
+      "passage_ref": "evidence-routing/1",
+      "passage_id": "p1:evidence-routing:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:6615a7db3702ed5c075e9ffa00253eee5e2683bce65893a044621c09d5d89f83",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if direct evidence must name the repeated-default condition.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "ai-03",
+      "passage_ref": "evidence-routing/1",
+      "passage_id": "p1:evidence-routing:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:6615a7db3702ed5c075e9ffa00253eee5e2683bce65893a044621c09d5d89f83",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 if the intent is limited to choosing the authoritative source.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "ai-03",
+      "passage_ref": "evidence-routing/3",
+      "passage_id": "p1:evidence-routing:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:e46e99342fa3b73b75a5ac99f4856f9d86f614debb70dae8b2313a750ceffde9",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 only if the question is interpreted as asking solely for escalation after a conflict remains.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "ai-04",
+      "passage_ref": "evidence-routing/2",
+      "passage_id": "p1:evidence-routing:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:24ffa34a30a5fbbf433b27fbd687b3f7cea3d77f6ee37194049867e56366bdfa",
+      "ai_proposed_grade": 3,
+      "ai_alternative_grade": 2,
+      "ai_flag_reason": "Use 2 if actual downstream case closure is required. Release is a proxy in this exercise.",
+      "reviewed_grade": 3,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "ai-04",
+      "passage_ref": "evidence-routing/3",
+      "passage_id": "p1:evidence-routing:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:e46e99342fa3b73b75a5ac99f4856f9d86f614debb70dae8b2313a750ceffde9",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if excluding guesses is considered useful boundary evidence for a substantive answer count.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "ai-04",
+      "passage_ref": "evidence-routing/4",
+      "passage_id": "p1:evidence-routing:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:8ccef999aa50e0f79b2e4c97ffe2e718efc049ca272f2776fb8a296ea3ce7957",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 if naming the rate alone is considered sufficient.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "ai-07",
+      "passage_ref": "model-shift/1",
+      "passage_id": "p1:model-shift:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:c8176a96938b6119edc7f0eae3e62eca0fbed87fb785b46faf784c517f4c314f",
+      "ai_proposed_grade": 1,
+      "ai_alternative_grade": 0,
+      "ai_flag_reason": "Use 0 if only a plausible cause of improved measured outcomes counts.",
+      "reviewed_grade": 1,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "ai-07",
+      "passage_ref": "model-shift/3",
+      "passage_id": "p1:model-shift:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:ecdcf712f5087b60d96067e34d96dc39ee254c7ddeeffd584d7610d3e194f806",
+      "ai_proposed_grade": 3,
+      "ai_alternative_grade": 2,
+      "ai_flag_reason": "Use 2 if the question is interpreted as requiring evidence that grading practice actually changed, rather than an explanation to check.",
+      "reviewed_grade": 3,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cy-01",
+      "passage_ref": "identity-review/1",
+      "passage_id": "p1:identity-review:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:ee2c8db0cdcbd008dec4683cf216789a905cb4c6760c33a624a8e94bf8a15429",
+      "ai_proposed_grade": 3,
+      "ai_alternative_grade": 2,
+      "ai_flag_reason": "Use 2 if a transfer-specific old-access removal approval is considered an essential clause.",
+      "reviewed_grade": 3,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cy-01",
+      "passage_ref": "identity-review/3",
+      "passage_id": "p1:identity-review:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:f1dda60e0a86a8510a2be5f1904526b22ad52bda682a44d7fd14430dedf2d640",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 only if the rubric counts this as general background on approval segregation.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cy-03",
+      "passage_ref": "identity-review/4",
+      "passage_id": "p1:identity-review:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:933ef4c4141e788c736c2e312ab840a1ec51d27fa5d33081e483b1ac4c556a82",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 only if analogy about separate ownership registers is treated as useful context.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cy-04",
+      "passage_ref": "identity-review/4",
+      "passage_id": "p1:identity-review:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:933ef4c4141e788c736c2e312ab840a1ec51d27fa5d33081e483b1ac4c556a82",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if general audit attribution is useful context.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cy-07",
+      "passage_ref": "event-replay/2",
+      "passage_id": "p1:event-replay:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:64cfd4b83e6d64a404fa1dcf2385b26bfe974daf1950e889d81270a35b7df343",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 only if correction-preservation analogy is considered relevant context.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "econ-05",
+      "passage_ref": "vendor-transition/1",
+      "passage_id": "p1:vendor-transition:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:977aeb8e8c52c34386edea19def18068a3c7a85086b55b98f9d3069ede352d9f",
+      "ai_proposed_grade": 3,
+      "ai_alternative_grade": 2,
+      "ai_flag_reason": "Use 2 if the first-year comparison must be quantified.",
+      "reviewed_grade": 3,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "econ-06",
+      "passage_ref": "backup-assurance/1",
+      "passage_id": "p1:backup-assurance:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:e8f8bc9deef272c657dd13b5ea1701929e039226ef43a5a45a7a64a91c62b0d0",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 only if a copy-versus-usability analogy is counted as useful support.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "econ-07",
+      "passage_ref": "vendor-transition/2",
+      "passage_id": "p1:vendor-transition:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:80d9ce316000f1e83c364ffe3efe5433234b976b15837782ae008a81cae113c8",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if the time-horizon and lower-conversion discussion does not directly identify buyer types.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "econ-08",
+      "passage_ref": "vendor-transition/4",
+      "passage_id": "p1:vendor-transition:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:4da185536035b52f046fbf4e363cdf612ef01e744f80b619becd139bc3db3749",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 only if evidence on measuring the input alone is useful.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "sw-02",
+      "passage_ref": "event-replay/1",
+      "passage_id": "p1:event-replay:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:c6e9d59f8c9e1c4e3fdf05418307239a86c7003b584b7dda28100eab6325dc78",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 if naming and describing the action key alone suffices.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "sw-04",
+      "passage_ref": "backup-assurance/1",
+      "passage_id": "p1:backup-assurance:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:e8f8bc9deef272c657dd13b5ea1701929e039226ef43a5a45a7a64a91c62b0d0",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if output validation before switching is accepted as useful analogy.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "sw-05",
+      "passage_ref": "identity-review/2",
+      "passage_id": "p1:identity-review:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:c7d2c80352f4e94502e0d656646125912f8e424d823a21b1bab0f30764cd489b",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 only if a broad namespace analogy is judged useful.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "sw-05",
+      "passage_ref": "shared-cache/2",
+      "passage_id": "p1:shared-cache:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:9a735e3b8f3ef8d356bcb34d26b418b1ed8a48aebac8d1cb43b10365c4ebd3da",
+      "ai_proposed_grade": 3,
+      "ai_alternative_grade": 2,
+      "ai_flag_reason": "Use 2 if the complete key, including normalization and ranking protocol, is essential to the intent.",
+      "reviewed_grade": 3,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "sw-06",
+      "passage_ref": "shared-cache/4",
+      "passage_id": "p1:shared-cache:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:8bc697779b3cb507555072c41166e797fbfbd2c23e6e7eba89dca98889156388",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if recording revisions counts as useful supporting context.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-01",
+      "passage_ref": "event-replay/1",
+      "passage_id": "p1:event-replay:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:c6e9d59f8c9e1c4e3fdf05418307239a86c7003b584b7dda28100eab6325dc78",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if resume boundary context is accepted as supporting evidence.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-01",
+      "passage_ref": "event-replay/2",
+      "passage_id": "p1:event-replay:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:64cfd4b83e6d64a404fa1dcf2385b26bfe974daf1950e889d81270a35b7df343",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if replay behavior must be explicitly tied to a replacement index acceptance check.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-01",
+      "passage_ref": "event-replay/3",
+      "passage_id": "p1:event-replay:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:13e6239b4552c31120d9812068831299854c8aa54980ff5e0400f9d2bfb6cdfe",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if procedure alone is insufficient without evidence of output validation.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-01",
+      "passage_ref": "event-replay/4",
+      "passage_id": "p1:event-replay:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:3986e40bf108c8bf2ee450b8024b95743be3ed42871cfc17b8e27e1c84d0cd3c",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if the index usability clause requires a demonstrated check on the rebuilt index.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-01",
+      "passage_ref": "shared-cache/2",
+      "passage_id": "p1:shared-cache:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:9a735e3b8f3ef8d356bcb34d26b418b1ed8a48aebac8d1cb43b10365c4ebd3da",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if similar old/new coexistence is accepted as context.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-02",
+      "passage_ref": "event-replay/1",
+      "passage_id": "p1:event-replay:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:c6e9d59f8c9e1c4e3fdf05418307239a86c7003b584b7dda28100eab6325dc78",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if distinct identifier semantics are accepted as a boundary-control analogy.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-02",
+      "passage_ref": "event-replay/2",
+      "passage_id": "p1:event-replay:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:64cfd4b83e6d64a404fa1dcf2385b26bfe974daf1950e889d81270a35b7df343",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 under a broad identifier-isolation reading.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-02",
+      "passage_ref": "identity-review/2",
+      "passage_id": "p1:identity-review:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:c7d2c80352f4e94502e0d656646125912f8e424d823a21b1bab0f30764cd489b",
+      "ai_proposed_grade": 1,
+      "ai_alternative_grade": 2,
+      "ai_flag_reason": "Use 2 if the intended system boundary includes entitlement inventories.",
+      "reviewed_grade": 1,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-02",
+      "passage_ref": "identity-review/4",
+      "passage_id": "p1:identity-review:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:933ef4c4141e788c736c2e312ab840a1ec51d27fa5d33081e483b1ac4c556a82",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if separate authority lists count as a relevant isolation mechanism.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-02",
+      "passage_ref": "shared-cache/2",
+      "passage_id": "p1:shared-cache:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:9a735e3b8f3ef8d356bcb34d26b418b1ed8a48aebac8d1cb43b10365c4ebd3da",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 if the disjunctive wording permits a complete answer from the data-store example alone.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-03",
+      "passage_ref": "backup-assurance/1",
+      "passage_id": "p1:backup-assurance:1:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:e8f8bc9deef272c657dd13b5ea1701929e039226ef43a5a45a7a64a91c62b0d0",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 if one complete operational-proxy example suffices.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-03",
+      "passage_ref": "event-replay/3",
+      "passage_id": "p1:event-replay:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:13e6239b4552c31120d9812068831299854c8aa54980ff5e0400f9d2bfb6cdfe",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if a misleading processed-time dashboard is accepted as a proxy example.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-03",
+      "passage_ref": "event-replay/4",
+      "passage_id": "p1:event-replay:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:3986e40bf108c8bf2ee450b8024b95743be3ed42871cfc17b8e27e1c84d0cd3c",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if a documented change in an indicator is essential.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-03",
+      "passage_ref": "evidence-routing/2",
+      "passage_id": "p1:evidence-routing:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:24ffa34a30a5fbbf433b27fbd687b3f7cea3d77f6ee37194049867e56366bdfa",
+      "ai_proposed_grade": 1,
+      "ai_alternative_grade": 0,
+      "ai_flag_reason": "Use 0 if the question strictly requires an unmeasured underlying outcome.",
+      "reviewed_grade": 1,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-03",
+      "passage_ref": "evidence-routing/3",
+      "passage_id": "p1:evidence-routing:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:e46e99342fa3b73b75a5ac99f4856f9d86f614debb70dae8b2313a750ceffde9",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if a larger recurring evidence count is considered an analogy rather than an operational indicator.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-03",
+      "passage_ref": "identity-review/3",
+      "passage_id": "p1:identity-review:3:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:f1dda60e0a86a8510a2be5f1904526b22ad52bda682a44d7fd14430dedf2d640",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 if a complete single proxy example suffices.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-03",
+      "passage_ref": "model-shift/2",
+      "passage_id": "p1:model-shift:2:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:978ec9195773f9fc1eb1ac42417bad79dca618202ee9d90167993e74b8739831",
+      "ai_proposed_grade": 2,
+      "ai_alternative_grade": 3,
+      "ai_flag_reason": "Use 3 if one example suffices and a larger prioritized queue is treated as the apparently favorable indicator.",
+      "reviewed_grade": 2,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-04",
+      "passage_ref": "evidence-routing/4",
+      "passage_id": "p1:evidence-routing:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:8ccef999aa50e0f79b2e4c97ffe2e718efc049ca272f2776fb8a296ea3ce7957",
+      "ai_proposed_grade": 1,
+      "ai_alternative_grade": 2,
+      "ai_flag_reason": "Use 2 if the paired metrics alone are treated as substantial evidence for the support-versus-automation clause.",
+      "reviewed_grade": 1,
+      "resolution": "retained-ai-proposed-grade"
+    },
+    {
+      "query_id": "cross-04",
+      "passage_ref": "vendor-transition/4",
+      "passage_id": "p1:vendor-transition:4:4ebed81c22278e1817b4b4f4abb2fae7bc8cb2c38eef5f005ba016088e7a2bd8:4da185536035b52f046fbf4e363cdf612ef01e744f80b619becd139bc3db3749",
+      "ai_proposed_grade": 0,
+      "ai_alternative_grade": 1,
+      "ai_flag_reason": "Use 1 if transition-cost measurement alone is useful context.",
+      "reviewed_grade": 0,
+      "resolution": "retained-ai-proposed-grade"
+    }
+  ],
+  "dataset_fingerprint": "bf6cb3182ff43ae9b447e9d4ff37086d0a67d1d7f9edcc39132f29f79e7f38d6"
+}
