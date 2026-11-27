@@ -445,8 +445,8 @@ near-ties can still change scores or ranks across platforms.
 ### Reviewed datasets and metrics
 
 Ranking-only reports contain logical rankings, scores and diagnostic
-latency. Quality fields are absent. The included schema v2 dataset meets the
-judgment requirements for a future quality run. To use it, pass
+latency. Quality fields are absent. The included schema v2 dataset provides
+the judgments for quality evaluation. To use it, pass
 `--mode quality --dataset evaluation/portable_benchmark/dataset.reviewed.json` and
 `--dataset-sha256 <canonical-dataset-sha256>` plus a new output path.
 Use `run_benchmark.dataset_fingerprint` on the validated `PortableDataset` to
@@ -460,6 +460,127 @@ within K. nDCG@K uses grades 0–3 with gain `2**grade - 1` and ideal
 ordering from the judged grades. Unjudged retrieved passages contribute
 zero gain. Queries without a positive judgment are rejected. Results
 include equal-weight per-query averages overall and within categories.
+
+### Portable quality baseline v1
+
+The [first validated run](baselines/portable_quality_v1.json) is the
+authoritative report for the proposed baseline. The
+[complete second-run report](baselines/portable_quality_v1_run2.json) preserves
+the independent reproduction. The
+[run comparison](baselines/portable_quality_v1_reproducibility.json) records
+both report paths and hashes, seed checks, per-query ordered-ranking digests,
+and aggregate metrics and latencies. Raw ownership and readiness records
+remain with the local verification outputs.
+
+The dataset fingerprint is
+`bf6cb3182ff43ae9b447e9d4ff37086d0a67d1d7f9edcc39132f29f79e7f38d6`, and the
+corpus fingerprint is
+`e4f0f2fba8a9c2b598a260269891cde0b54d9566b0c0a68beb74443a7d700300`.
+Both reports use `aura-portable-retrieval-v1`, the same pinned local
+embedding and reranker revisions, and the five profiles above at top-k 5.
+Both seeds reached Alembic revision `625afa44aa81` and verified eight
+documents, 40 chunks and 40 cosine vectors of dimension 384. The fresh
+PostgreSQL systems and Qdrant instances were distinct. Fresh SQL sequences
+produced the same numeric document and chunk IDs, and all 40 Qdrant point
+IDs differed. All 180 ordered logical rankings, ranking scores and query
+metrics matched exactly, as did all category and overall metrics.
+
+| Profile | Precision@5 | Recall@5 | MRR@5 | nDCG@5 | First mean / median / p95 (ms) | Second mean / median / p95 (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `dense` | 0.5944 | 0.7828 | 0.9491 | 0.7852 | 119.7 / 118.2 / 130.8 | 118.2 / 117.6 / 125.0 |
+| `hybrid` | 0.5500 | 0.7041 | 0.9639 | 0.7405 | 122.5 / 116.4 / 129.3 | 113.6 / 113.3 / 121.5 |
+| `hybrid_rerank_5` | 0.5278 | 0.6834 | 0.9653 | 0.7461 | 162.9 / 161.4 / 172.0 | 162.3 / 161.6 / 170.5 |
+| `hybrid_rerank_10` | 0.5722 | 0.7412 | 0.9630 | 0.7711 | 199.0 / 199.8 / 207.4 | 200.0 / 199.6 / 211.1 |
+| `hybrid_rerank_20` | 0.5611 | 0.7248 | 0.9653 | 0.7759 | 284.2 / 281.6 / 301.8 | 283.7 / 283.3 / 303.4 |
+
+Dense led precision, recall and nDCG. Rerank pools 5 and 20 tied on MRR.
+Hybrid improved cross-domain nDCG from 0.6975 to 0.8418, and all three
+rerank profiles scored lower on that category than hybrid. The pool size
+controls each retriever's input cutoff as well as the number of fused
+candidates, so changing it can change which passages reach the reranker.
+These are descriptive results from 36 queries on a small synthetic corpus
+with AI-assisted judgments verified by one human reviewer. Passage metrics
+do not establish whether the retrieved set covers all clauses of a
+cross-domain question. The table provides neither an answer-quality
+measurement nor a comparison with the historical v0.2 corpus.
+
+Latency was measured around each retrieval call on Windows AMD64 using
+Python 3.12.16, offline CPU inference, and Docker Desktop's Linux engine.
+It includes SQL and container transport, query embedding, reranking where
+configured, and cache effects. Seeding, model startup, and metric
+calculation are outside the timed call. These two sequential runs do not
+establish a production latency distribution.
+
+#### Reproduce the two quality runs
+
+From `backend`, prepare the pinned model directories as described above,
+set `$embedding` and `$reranker` to those directories, and use a warm
+`tiktoken` cache for offline execution. In PowerShell with the local
+`desktop-linux` context, use separate state and output paths for each run.
+The lifecycle checks port availability and owns teardown by state file.
+
+```powershell
+$env:HF_HUB_OFFLINE = '1'
+$env:TRANSFORMERS_OFFLINE = '1'
+$dataset = 'evaluation/portable_benchmark/dataset.reviewed.json'
+$digest = 'bf6cb3182ff43ae9b447e9d4ff37086d0a67d1d7f9edcc39132f29f79e7f38d6'
+$scratch = Join-Path $env:TEMP ('aura-quality-' + (New-Guid).ToString('N').Substring(0, 8))
+New-Item -ItemType Directory -Path $scratch -ErrorAction Stop | Out-Null
+
+foreach ($run in @(
+    @{ Name = 'first'; Pg = 15432; Qd = 16333 },
+    @{ Name = 'second'; Pg = 15433; Qd = 16343 }
+)) {
+    $state = Join-Path $scratch ($run.Name + '-ownership.json')
+    $report = Join-Path $scratch ($run.Name + '-quality.json')
+    try {
+        python -m evaluation.portable_benchmark.seed_lifecycle start --docker-context desktop-linux --state $state --postgres-port $run.Pg --qdrant-port $run.Qd
+        if ($LASTEXITCODE -ne 0) { throw 'Benchmark startup failed' }
+        $stack = (Get-Content -LiteralPath $state -Raw | ConvertFrom-Json).record
+        $target = @('--docker-context', $stack.context, '--project', $stack.project,
+            '--postgres-port', [string]$stack.postgres_port, '--qdrant-port', [string]$stack.qdrant_port)
+        $seed = python -m evaluation.portable_benchmark.seed @target --model-dir $embedding
+        if ($LASTEXITCODE -ne 0) { throw 'Benchmark seed failed' }
+        [IO.File]::WriteAllText((Join-Path $scratch ($run.Name + '-seed.json')), ($seed -join [Environment]::NewLine))
+        python -m evaluation.portable_benchmark.run_benchmark @target --embedding-model-dir $embedding --reranker-model-dir $reranker --mode quality --dataset $dataset --dataset-sha256 $digest --top-k 5 --hybrid-pool 20 --rerank-pools 5 10 20 --output $report
+        if ($LASTEXITCODE -ne 0) { throw 'Quality benchmark failed' }
+    } finally {
+        if (Test-Path -LiteralPath $state -PathType Leaf) {
+            python -m evaluation.portable_benchmark.seed_lifecycle stop --state $state
+            if ($LASTEXITCODE -ne 0) { throw "Benchmark teardown failed. Inspect $state" }
+        }
+    }
+}
+```
+
+From `backend`, validate both retained reports against the same trusted
+configuration. Pass the report bytes to the existing strict validator.
+
+```python
+from pathlib import Path
+
+from evaluation.portable_benchmark.ranking_report import validate_report
+from evaluation.portable_benchmark.run_benchmark import load_report_context
+
+root = Path("evaluation/portable_benchmark")
+context = load_report_context(
+    "quality", top_k=5, hybrid_pool=20, rerank_pools=(5, 10, 20),
+    dataset_path=root / "dataset.reviewed.json",
+    expected_dataset_sha256="bf6cb3182ff43ae9b447e9d4ff37086d0a67d1d7f9edcc39132f29f79e7f38d6",
+)
+first, second = (
+    validate_report((root / "baselines" / name).read_bytes(), context)
+    for name in ("portable_quality_v1.json", "portable_quality_v1_run2.json")
+)
+```
+
+Use the retained reports to compare ordered logical passage IDs, scores,
+and quality metrics by profile and query ID. Recompute latency summaries
+from each report's own per-query observations. The comparison artifact uses
+`corpus.json_digest` on each ordered list of logical passage IDs, independent
+of runtime IDs. The artifacts support revalidation of the recorded results.
+Verifying the historical execution environment and reviewer identity
+requires separate evidence.
 
 ### Reports, recovery, and limitations
 
@@ -527,7 +648,7 @@ and follow the lifecycle recovery instructions above. SQL and Qdrant
 do not share a snapshot. A concurrent out-of-band change that is fully
 reverted between checks can evade the before-and-after comparisons.
 The historical v0.2 regression checker uses a separate report format.
-No portable quality baseline is approved in this checkpoint.
+The proposed portable baseline remains subject to review.
 
 For the opt-in ranking test, also set
 `AURA_BENCHMARK_TEST_RERANKER_DIR` to the prepared reranker directory.
