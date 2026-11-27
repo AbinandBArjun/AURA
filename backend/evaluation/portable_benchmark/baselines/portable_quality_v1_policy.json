@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "policy_id": "portable-quality-v1",
+  "baseline_sha256": "65d8b820a5accccb28462788bd2465d868f105ff52bcadf3036527c0e89dea4e",
+  "blocking_tolerances": {
+    "precision_at_k": 0.02,
+    "recall_at_k": 0.03,
+    "mrr_at_k": 0.02,
+    "ndcg_at_k": 0.02
+  },
+  "category_ndcg_warning": 0.05,
+  "epsilon": 1e-12
+}

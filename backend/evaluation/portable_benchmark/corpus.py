@@ -26,6 +26,10 @@ class Passage:
     chunk: TextChunk
 
 
+class JSONNumberUnderflow(ValueError):
+    """A nonzero JSON number was rounded to zero during decoding."""
+
+
 def decode_json(data, source="Report"):
     def unique_keys(pairs):
         result = {}
@@ -42,6 +46,9 @@ def decode_json(data, source="Report"):
         number = float(value)
         if not isfinite(number):
             nonfinite(value)
+        if number == 0 and any(digit in "123456789" for digit in value.lower().split("e", 1)[0]):
+            # For JSON decimals the significand alone determines whether the value is zero.
+            raise JSONNumberUnderflow(f"{source}: nonzero JSON number underflows to zero")
         return number
 
     return json.loads(data, object_pairs_hook=unique_keys, parse_constant=nonfinite, parse_float=finite_float)

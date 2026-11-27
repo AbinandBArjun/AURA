@@ -582,6 +582,72 @@ of runtime IDs. The artifacts support revalidation of the recorded results.
 Verifying the historical execution environment and reviewer identity
 requires separate evidence.
 
+### Compare a portable quality report
+
+From `backend`, run the service-independent checker against a fresh quality
+report. The committed reproduction report is a passing example.
+
+```console
+python -m evaluation.portable_benchmark.check_quality_regression evaluation/portable_benchmark/baselines/portable_quality_v1_run2.json
+python -m evaluation.portable_benchmark.check_quality_regression evaluation/portable_benchmark/baselines/portable_quality_v1_run2.json --format json
+```
+
+The reference is [portable_quality_v1.json](baselines/portable_quality_v1.json)
+with SHA-256
+`65d8b820a5accccb28462788bd2465d868f105ff52bcadf3036527c0e89dea4e`.
+The checker requires those exact bytes after optional CRLF-to-LF conversion
+for a Git checkout. Other content changes fail the hash check. It needs no
+Git access, services, or model weights. The CLI always uses this reference
+and [policy v1](baselines/portable_quality_v1_policy.json).
+
+Both reports must pass strict validation against the same independently
+loaded corpus, reviewed dataset, model manifests, and five top-k 5 profiles.
+The checker recomputes quality from each ranking using the approved
+judgments, and applies each absolute tolerance independently in every profile.
+
+| Metric | Allowed absolute decrease |
+| --- | ---: |
+| Precision@5 | 0.020 |
+| Recall@5 | 0.030 |
+| MRR@5 | 0.020 |
+| nDCG@5 | 0.020 |
+
+The drop is baseline minus candidate. A drop blocks only when it exceeds
+the tolerance plus `1e-12`, using unrounded values. A category nDCG@5 drop
+above `0.050 + 1e-12` warns without blocking. Improvements cannot offset
+another metric or profile's failure. These tolerances reflect engineering
+choices for this reviewed synthetic corpus. They are not statistical
+confidence bounds or guarantees of answer quality or production performance.
+
+Text mode summarizes all 20 quality checks and shows warnings, the largest
+per-query regressions, changed ranking counts, and latency summaries.
+JSON mode writes a versioned result to stdout, including all 25 category
+comparisons, input and policy digests, per-query metric changes, and added,
+removed, moved, or rescored passages. Quality-preserving ranking changes
+are permitted. Mean, median, and inclusive p95 latency are independently
+recomputed and reported without performance thresholds. Latency changes
+and inconsistent declared summaries cannot cause a quality failure. A
+percentage change is null when the baseline is zero or the result is
+outside the finite floating-point range.
+
+- **Exit 0** for a valid comparison with no blocking failures, even with warnings.
+- **Exit 1** for a valid comparison with blocking quality regressions.
+- **Exit 2** for an invalid input, incompatible context, invalid policy, or execution error.
+  Text mode sends the error to stderr. JSON mode emits a structured error on stdout.
+
+The shared decoder rejects nonfinite numbers and positive or negative
+nonzero values that round to zero when converted to a float. Mathematical
+zero, including signed zero, and representable subnormal values still pass
+decoding. Each report or policy field applies its own range checks.
+
+A failed output write or flush returns exit 2, with a short stderr
+diagnostic when available. A broken stream may prevent delivery of the
+complete result, including a JSON error response.
+
+Report validation checks the results against trusted benchmark inputs.
+Verifying the execution that produced a candidate requires separate evidence.
+Automated candidate generation and gate integration are planned for Checkpoint 17.5C.
+
 ### Reports, recovery, and limitations
 
 Report schema 1 records the corpus and dataset fingerprints and review
