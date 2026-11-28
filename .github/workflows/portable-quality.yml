@@ -1,0 +1,450 @@
+name: Portable retrieval quality pilot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/portable-quality.yml'
+      - 'backend/app/**'
+      - 'backend/evaluation/**'
+      - 'backend/migrations/**'
+      - 'backend/alembic.ini'
+      - 'backend/requirements.txt'
+      - 'backend/tests/prepare_embedding_model.py'
+      - 'backend/tests/embedding_model_manifest.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: sqlite://
+  ENVIRONMENT: development
+  TRUSTED_REFERENCE: 4f8fa9817df6c8e8f03ea1455d7ec1de454dc0bd
+  BASELINE_SHA256: 65d8b820a5accccb28462788bd2465d868f105ff52bcadf3036527c0e89dea4e
+  POLICY_FILE_SHA256: 3a59dc06386e493bbd1eca7f2b97b4a437bb4efca3ff1398c4273a34d07a6702
+  POLICY_SHA256: bf784d3323f97fa60234e148cb2bfa593b29b7b6c2aac1e885986c5de33fb95e
+  DATASET_SHA256: bf6cb3182ff43ae9b447e9d4ff37086d0a67d1d7f9edcc39132f29f79e7f38d6
+  CORPUS_SHA256: e4f0f2fba8a9c2b598a260269891cde0b54d9566b0c0a68beb74443a7d700300
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  generate:
+    name: Generate isolated candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      HF_HUB_DISABLE_XET: "1"
+    outputs:
+      artifact_name: ${{ steps.paths.outputs.artifact_name }}
+    steps:
+      - name: Reject unsupported benchmark refs
+        working-directory: .
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            echo "Portable quality verification requires main. Dispatch the pilot from main." >&2
+            exit 2
+          fi
+
+      - name: Check out candidate revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Prepare isolated paths and inspect runner
+        id: paths
+        timeout-minutes: 2
+        run: |
+          umask 077
+          work=$(mktemp -d "$RUNNER_TEMP/aura-quality.XXXXXXXX")
+          echo "QUALITY_WORK=$work" >> "$GITHUB_ENV"
+          echo "AURA_TEST_EMBEDDING_MODEL=$RUNNER_TEMP/aura-minilm" >> "$GITHUB_ENV"
+          echo "AURA_QUALITY_RERANKER=$RUNNER_TEMP/aura-quality-reranker" >> "$GITHUB_ENV"
+          echo "TIKTOKEN_CACHE_DIR=$work/tiktoken" >> "$GITHUB_ENV"
+          echo "artifact_name=portable-quality-candidate-$GITHUB_RUN_ATTEMPT.json" >> "$GITHUB_OUTPUT"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "Candidate revision $GITHUB_SHA"
+          python --version
+          test "$(uname -s)" = Linux
+          test "$(docker --context default info --format '{{.OSType}}')" = linux
+          docker --context default version --format '{{.Server.Version}}'
+          docker compose version
+          df -h "$RUNNER_TEMP"
+          free -m
+
+      - name: Install backend dependencies
+        timeout-minutes: 9
+        run: python -m pip install -r requirements.txt
+
+      - name: Cache pinned embedding model
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.AURA_TEST_EMBEDDING_MODEL }}
+          key: ${{ runner.os }}-${{ runner.arch }}-aura-minilm-${{ hashFiles('backend/tests/prepare_embedding_model.py', 'backend/tests/embedding_model_manifest.json') }}
+
+      - name: Cache pinned reranker
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.AURA_QUALITY_RERANKER }}
+          key: ${{ runner.os }}-${{ runner.arch }}-aura-reranker-${{ hashFiles('backend/evaluation/portable_benchmark/reranker_manifest.json', 'backend/evaluation/portable_benchmark/reranker_assets.py', 'backend/tests/prepare_embedding_model.py', 'backend/evaluation/portable_benchmark/seed_assets.py') }}
+
+      - name: Prepare and verify both pinned models and tokenizer
+        timeout-minutes: 6
+        run: |
+          python tests/prepare_embedding_model.py "$AURA_TEST_EMBEDDING_MODEL"
+          python -m evaluation.portable_benchmark.reranker_assets --model-dir "$AURA_QUALITY_RERANKER"
+          python -c 'from tiktoken import get_encoding; get_encoding("cl100k_base")'
+
+      - name: Seed and generate a strict quality report
+        id: candidate
+        timeout-minutes: 10
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          umask 077
+          helper=evaluation.portable_benchmark.quality_ci_candidate
+          cleanup() {
+            status=$?
+            trap - EXIT HUP INT TERM
+            cleanup_status=0
+            timeout 90s python -m "$helper" cleanup "$QUALITY_WORK" >> "$QUALITY_WORK/cleanup.txt" 2>&1 \
+              || cleanup_status=$?
+            printf 'Generation exit %s; cleanup trap exit %s.\n' "$status" "$cleanup_status" >> "$QUALITY_WORK/cleanup.txt" || true
+            cat "$QUALITY_WORK/cleanup.txt" || true
+            if [[ -f "$QUALITY_WORK/generation.txt" ]]; then
+              cat "$QUALITY_WORK/generation.txt" || true
+            fi
+            if (( status != 0 )); then
+              exit "$status"
+            fi
+            exit "$cleanup_status"
+          }
+          trap cleanup EXIT
+          trap 'exit 2' HUP INT TERM
+          python -m "$helper" generate "$QUALITY_WORK" > "$QUALITY_WORK/generation.txt" 2>&1
+
+      - name: Confirm owned resources are gone and inventory matches
+        if: ${{ always() && steps.paths.outcome == 'success' && steps.candidate.outcome != 'skipped' }}
+        timeout-minutes: 2
+        run: |
+          cleanup_status=0
+          python -m evaluation.portable_benchmark.quality_ci_candidate cleanup "$QUALITY_WORK" \
+            >> "$QUALITY_WORK/cleanup.txt" 2>&1 || cleanup_status=$?
+          printf 'Follow-up cleanup exit %s.\n' "$cleanup_status" >> "$QUALITY_WORK/cleanup.txt" || true
+          cat "$QUALITY_WORK/cleanup.txt" || true
+          exit "$cleanup_status"
+
+      - name: Publish candidate report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        timeout-minutes: 2
+        with:
+          path: ${{ env.QUALITY_WORK }}/${{ steps.paths.outputs.artifact_name }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish sanitized generation diagnostics
+        if: ${{ always() && steps.paths.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        timeout-minutes: 2
+        with:
+          name: portable-quality-generation-${{ github.run_attempt }}
+          path: |
+            ${{ env.QUALITY_WORK }}/generation.txt
+            ${{ env.QUALITY_WORK }}/cleanup.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+  verify:
+    name: Verify against trusted quality baseline
+    needs: generate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: trusted/backend
+    steps:
+      - name: Check out the trusted verifier and benchmark inputs
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TRUSTED_REFERENCE }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Set up Python without a shared dependency cache
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Install trusted verification dependencies and prepare tokenizer
+        timeout-minutes: 9
+        run: |
+          test "$(git rev-parse HEAD)" = "$TRUSTED_REFERENCE"
+          python -m pip install -r requirements.txt
+          export TIKTOKEN_CACHE_DIR
+          TIKTOKEN_CACHE_DIR=$(mktemp -d "$RUNNER_TEMP/aura-tokenizer.XXXXXXXX")
+          echo "TIKTOKEN_CACHE_DIR=$TIKTOKEN_CACHE_DIR" >> "$GITHUB_ENV"
+          python -c 'from tiktoken import get_encoding; get_encoding("cl100k_base")'
+
+      - name: Create separate artifact input and diagnostic directories
+        id: paths
+        run: |
+          umask 077
+          input=$(mktemp -d "$RUNNER_TEMP/aura-quality-input.XXXXXXXX")
+          output=$(mktemp -d "$RUNNER_TEMP/aura-quality-result.XXXXXXXX")
+          echo "QUALITY_INPUT=$input" >> "$GITHUB_ENV"
+          echo "QUALITY_OUTPUT=$output" >> "$GITHUB_ENV"
+
+      - name: Validate the expected artifact name
+        env:
+          CANDIDATE_ARTIFACT: ${{ needs.generate.outputs.artifact_name }}
+        run: |
+          [[ "$CANDIDATE_ARTIFACT" =~ ^portable-quality-candidate-[1-9][0-9]*\.json$ ]]
+
+      - name: Download only the current run's raw candidate report
+        id: download
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        timeout-minutes: 2
+        with:
+          name: ${{ needs.generate.outputs.artifact_name }}
+          path: ${{ env.QUALITY_INPUT }}
+          skip-decompress: true
+          digest-mismatch: error
+
+      # This adapter is part of the main-branch workflow. All evaluation modules
+      # it imports come from the trusted checkout, and the artifact remains data.
+      - name: Verify report, publish summary and propagate status
+        if: ${{ always() && steps.paths.outcome == 'success' && !cancelled() }}
+        timeout-minutes: 3
+        env:
+          CANDIDATE_ARTIFACT: ${{ needs.generate.outputs.artifact_name }}
+          DOWNLOAD_OUTCOME: ${{ steps.download.outcome }}
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          python - <<'PY'
+          from contextlib import redirect_stdout
+          from hashlib import sha256
+          import io
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import stat
+          import subprocess
+          import sys
+          from tempfile import NamedTemporaryFile
+
+          from evaluation.portable_benchmark import check_quality_regression as gate
+          from evaluation.portable_benchmark.corpus import decode_json, json_digest
+
+          ERROR_PHASES = {"arguments", "candidate", "baseline", "context", "policy", "comparison"}
+          ERROR_MESSAGES = {
+              "Supply a candidate path and optionally --format text or --format json.",
+              "Could not read the required input.",
+              "Nonzero JSON number underflows to zero.",
+              "Duplicate JSON key.",
+              "Nonfinite JSON number.",
+              "Invalid JSON or incompatible benchmark data.",
+              "Baseline bytes do not match the approved SHA-256.",
+              "Trusted inputs do not match the approved corpus and judgment inventory.",
+          }
+
+
+          def require(condition):
+              if not condition:
+                  raise ValueError("Unexpected verification input or diagnostics")
+
+
+          def validate_diagnostics(raw, code, candidate, env):
+              result = decode_json(raw, "Checker diagnostics")
+              require(type(result.get("schema_version")) is int and result["schema_version"] == 1)
+              if code == 2:
+                  require(set(result) == {"schema_version", "verdict", "validation", "error"})
+                  error = result["error"]
+                  require(result["verdict"] == "ERROR" and result["validation"] == "invalid")
+                  require(set(error) == {"phase", "message"} and error["phase"] in ERROR_PHASES)
+                  message = error["message"]
+                  require(isinstance(message, str) and (
+                      message in ERROR_MESSAGES
+                      or re.fullmatch(r"Strict validation rejected the input \([a-z0-9_]+\)\.", message)
+                      or re.fullmatch(r"Could not complete " + error["phase"] + r" \([a-zA-Z_][a-zA-Z0-9_]*\)\.", message)
+                  ))
+                  return result
+
+              require(code in (0, 1))
+              # The committed checker is deterministic for the same reports and policy.
+              # Reuse it to derive the full expected diagnostic, including its epsilon.
+              # Comparing canonical JSON also rejects bool/int substitutions and extra keys.
+              with redirect_stdout(io.StringIO()):
+                  expected = gate.run(candidate)
+              require(expected["baseline_sha256"] == expected["baseline_input_sha256"] == env["BASELINE_SHA256"])
+              require(expected["policy"]["sha256"] == env["POLICY_SHA256"])
+              require(expected["context"] == {
+                  "dataset_fingerprint": env["DATASET_SHA256"], "corpus_fingerprint": env["CORPUS_SHA256"],
+                  "evaluation_protocol": "aura-portable-retrieval-v1", "top_k": 5,
+              })
+              require(len(expected["quality_checks"]) == 20 and len(expected["categories"]) == 25)
+              require(expected["verdict"] == ("FAIL" if code == 1 else "PASS"))
+              require(json_digest(result) == json_digest(expected))
+              return result
+
+
+          def summary_lines(env, record, result):
+              lines = [
+                  "## Portable retrieval quality pilot",
+                  f"- Candidate revision `{env['GITHUB_SHA']}`",
+                  f"- Trusted revision `{env['TRUSTED_REFERENCE']}`",
+                  f"- Approved baseline SHA-256 `{env['BASELINE_SHA256']}`",
+                  f"- Approved canonical policy SHA-256 `{env['POLICY_SHA256']}`",
+                  f"- Validated checker quality verdict: {record['checker_verdict'] or 'unavailable'}",
+                  f"- Original checker exit: {record['checker_exit_code']}",
+                  f"- Verification phase: {record['phase']}",
+              ]
+              if record["reason"]:
+                  lines.append(f"- {record['reason']}")
+              if record["checker_verdict"] is None:
+                  return lines
+
+              checks = result["quality_checks"]
+              warnings = [row for row in result["categories"] if row["warning"]]
+              latency = result["latency"]
+              lines.extend([
+                  f"- {len(checks)} blocking comparisons, {result['blocking_failure_count']} failures, "
+                  f"{len(warnings)} category warnings, {result['changed_ordered_rankings']} changed ordered rankings",
+                  f"- {sum(len(row['inconsistent_summaries']) for row in latency)} nonblocking latency-summary warnings",
+                  "", "| Profile | Metric | Baseline | Candidate | Decision |", "|---|---|---:|---:|---|",
+              ])
+              for row in checks:
+                  lines.append(f"| {row['profile']} | {row['metric']} | {row['baseline']:.6f} | "
+                               f"{row['candidate']:.6f} | {row['decision']} |")
+              for row in checks:
+                  if row["decision"] == "FAIL":
+                      lines.append(f"\n- Blocking {row['profile']} / {row['metric']} drop {row['drop']:.6f}")
+              for row in warnings:
+                  lines.append(f"\n- {row['profile']} / {row['category']} nDCG drop {row['drop']:.6f}")
+              lines.extend(["", "### Nonblocking latency", "", "| Profile | Statistic | Baseline ms | Candidate ms |",
+                            "|---|---|---:|---:|"])
+              for row in latency:
+                  for metric in row["comparisons"]:
+                      lines.append(f"| {row['profile']} | {metric['metric']} | {metric['baseline']:.2f} | "
+                                   f"{metric['candidate']:.2f} |")
+              return lines
+
+
+          def publish_json(path, payload):
+              temporary = None
+              try:
+                  with NamedTemporaryFile(dir=path.parent, delete=False) as stream:
+                      temporary = Path(stream.name)
+                      stream.write(payload)
+                  os.replace(temporary, path)
+                  temporary = None
+              finally:
+                  if temporary is not None:
+                      temporary.unlink(missing_ok=True)
+
+
+          def execution_error(record, phase, reason):
+              record.update(outcome="EXECUTION_ERROR", adapter_status="error", exit_code=2, phase=phase, reason=reason)
+
+
+          def main(env):
+              record = dict(outcome="EXECUTION_ERROR", adapter_status="error", phase="trusted input identity",
+                            checker_exit_code=None, checker_verdict=None, exit_code=2, reason=None)
+              result = None
+              try:
+                  output = Path(env["QUALITY_OUTPUT"])
+                  policy_bytes = gate.POLICY_PATH.read_bytes()
+                  require(sha256(gate.BASELINE_PATH.read_bytes()).hexdigest() == env["BASELINE_SHA256"])
+                  require(sha256(policy_bytes).hexdigest() == env["POLICY_FILE_SHA256"])
+                  policy = gate.Policy.model_validate(decode_json(policy_bytes, "Policy"))
+                  require(json_digest(policy.model_dump()) == env["POLICY_SHA256"])
+
+                  record["phase"] = "candidate artifact transfer or layout"
+                  directory = Path(env["QUALITY_INPUT"])
+                  name = env["CANDIDATE_ARTIFACT"]
+                  require(env["DOWNLOAD_OUTCOME"] == "success")
+                  require(re.fullmatch(r"portable-quality-candidate-[1-9][0-9]*\.json", name))
+                  candidate = directory / name
+                  require(list(directory.iterdir()) == [candidate])
+                  info = candidate.lstat()
+                  require(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= 1024 * 1024)
+
+                  record["phase"] = "checker execution"
+                  process = subprocess.run(
+                      [sys.executable, "-m", "evaluation.portable_benchmark.check_quality_regression",
+                       str(candidate), "--format", "json"], capture_output=True, timeout=120,
+                  )
+                  code = record["checker_exit_code"] = process.returncode
+                  record["phase"] = "checker diagnostic validation"
+                  result = validate_diagnostics(process.stdout, code, candidate, env)
+                  if code in (0, 1):
+                      record["checker_verdict"] = result["verdict"]
+                  record["phase"] = "comparison publication"
+                  publish_json(output / "comparison.json", process.stdout)
+                  if code == 2:
+                      phase = result["error"]["phase"]
+                      record.update(outcome="INVALID_REPORT" if phase == "candidate" else "EXECUTION_ERROR",
+                                    phase=f"checker {phase}", reason=result["error"]["message"])
+                  else:
+                      record.update(outcome="QUALITY_REGRESSION" if code else "PASS", adapter_status="complete",
+                                    phase="comparison complete", exit_code=code)
+              except (OSError, ValueError, TypeError, KeyError, AttributeError, OverflowError,
+                      subprocess.SubprocessError) as error:
+                  execution_error(record, record["phase"], f"Unable to complete phase ({type(error).__name__}).")
+
+              try:
+                  with Path(env["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as stream:
+                      stream.write("\n".join(summary_lines(env, record, result)) + "\n")
+              except (OSError, ValueError, TypeError, KeyError) as error:
+                  execution_error(record, "summary publication", f"Unable to publish summary ({type(error).__name__}).")
+
+              try:
+                  publish_json(Path(env["QUALITY_OUTPUT"]) / "execution.json", (json.dumps(record) + "\n").encode())
+              except (OSError, ValueError, KeyError) as error:
+                  execution_error(record, "execution record publication",
+                                  f"Unable to publish execution record ({type(error).__name__}).")
+              if record["adapter_status"] == "error":
+                  try:
+                      print(f"{record['outcome']} during {record['phase']}. Adapter exit {record['exit_code']}. "
+                            f"{record['reason'] or ''}".rstrip(), file=sys.stderr, flush=True)
+                  except (OSError, ValueError):
+                      pass
+              return record["exit_code"]
+
+
+          if __name__ == "__main__":
+              sys.exit(main(os.environ))
+          PY
+
+      - name: Publish machine-readable verification diagnostics
+        if: ${{ always() && steps.paths.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        timeout-minutes: 2
+        with:
+          name: portable-quality-verification-${{ github.run_attempt }}
+          path: |
+            ${{ env.QUALITY_OUTPUT }}/comparison.json
+            ${{ env.QUALITY_OUTPUT }}/execution.json
+          if-no-files-found: warn
+          retention-days: 14

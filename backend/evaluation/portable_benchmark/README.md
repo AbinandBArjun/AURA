@@ -646,7 +646,91 @@ complete result, including a JSON error response.
 
 Report validation checks the results against trusted benchmark inputs.
 Verifying the execution that produced a candidate requires separate evidence.
-Automated candidate generation and gate integration are planned for Checkpoint 17.5C.
+
+### Hosted portable quality pilot
+
+The [Portable retrieval quality pilot](../../../.github/workflows/portable-quality.yml)
+runs on relevant pushes to `main` and can be started manually from **Actions →
+Portable retrieval quality pilot → Run workflow**. Select `main`. Other
+branches and tags fail before checkout or model preparation. Superseded
+runs for the same workflow and ref are cancelled. The pilot uses two
+`ubuntu-24.04` runners with Python 3.12 and read-only repository access.
+Core CI is unchanged. The pilot has no pull-request trigger or required check.
+
+1. **Generate isolated candidate.** Check out the event SHA, install the
+   backend requirements, and prepare the pinned MiniLM and cross-encoder
+   assets. MiniLM shares the integration job's cache key. The separate
+   reranker key includes the manifest and preparation code. Both preparers
+   verify the complete expected inventories and all 16 SHA-256 hashes even
+   on a cache hit. The job prepares the tokenizer before enabling offline
+   CPU inference. It probes the existing Linux publisher on the intended
+   output filesystem, including `O_TMPFILE` and the `/proc/self/fd` link.
+2. **Seed and publish.** The existing lifecycle starts a unique, owned
+   Compose project on loopback ports 15432 and 16333. The seeder validates
+   the checked-in migration head, eight documents, 40 canonical chunks and
+   40 corresponding 384-dimensional cosine vectors. The runner produces and
+   strictly validates 180 quality results for the reviewed dataset using
+   top-k 5, hybrid pool 20, and rerank pools 5, 10 and 20. Generation logs
+   include the candidate report SHA-256. An exit trap and a bounded follow-up
+   step tear down only resources in the original ownership record and compare
+   Docker inventories. Missing pre-run evidence after attempted startup
+   fails verification even if ownership-scoped teardown succeeds. If
+   startup was attempted and the ownership record is missing, matching
+   inventory alone cannot verify teardown. Repeated cleanup preserves the
+   earlier failure log. Forced runner termination can
+   interrupt cleanup, so the pilot uses disposable runners and isolated storage.
+3. **Verify against the trusted reference.** A separate runner checks out
+   `4f8fa9817df6c8e8f03ea1455d7ec1de454dc0bd` and installs dependencies
+   from that checkout. It downloads only the expected raw candidate JSON
+   into a separate directory, checks artifact integrity, and rejects files
+   exceeding 1 MiB. The trusted job checks the primary baseline byte hash
+   and the approved policy's raw and canonical hashes. Its checker validates
+   the report against the pinned reviewed dataset, corpus, models, and
+   retrieval settings, then recomputes the quality metrics. The second
+   committed report remains reproduction evidence. No candidate code,
+   executable artifact, or cache is used by the verifier.
+
+The Actions job summary lists the trusted and candidate revisions, baseline
+and policy hashes, validated quality decisions, warnings, ranking changes,
+and nonblocking latency. The workflow adapter reruns the deterministic
+checker calculation in the pinned checkout and compares its full diagnostics
+before rendering a comparison. The adapter is embedded in the reviewed
+workflow so the verifier does not load a helper from the candidate checkout.
+
+The execution record separates the original checker exit code and validated
+quality verdict from the adapter outcome. Exit 0 is a passing comparison
+with successful diagnostic publication, exit 1 is a valid blocking quality
+regression with successful diagnostic publication, and exit 2 covers invalid
+reports, invalid diagnostics, and execution errors. Summary failure preserves
+the validated comparison where available and records adapter exit 2. If the
+execution record itself cannot be published, stderr carries a sanitized
+failure. The final GitHub job outcome covers later failures, including those
+from the artifact upload service.
+
+Artifacts are retained for 14 days. `portable-quality-candidate-<attempt>.json`
+is the complete fresh report. `portable-quality-generation-<attempt>`
+contains sanitized generation phases where available.
+`portable-quality-verification-<attempt>` contains the checker JSON when
+valid and execution status with the checker exit code when available. Review
+the job logs first for startup, dependency, cache, or cleanup failures. For
+a quality regression, inspect the failing profile/metric rows and the
+query-level diagnostics. For an invalid candidate, inspect the declared
+failure phase and reproduce the comparison locally with the pinned trusted
+checkout and downloaded JSON. Never replace the baseline merely to clear a failure.
+
+The committed baseline measurements are from Windows. Ubuntu quality,
+duration, peak resource use, and cold/warm cache behavior require hosted
+pilot measurements. Latency differences are diagnostic. Report validation
+establishes consistency with the trusted judgments and policy. It does
+not establish how the candidate code obtained its rankings.
+
+To update the trusted reference, review the proposed checker, policy,
+baseline, and benchmark inputs together, then explicitly update the workflow
+revision pin and any approved identities in a reviewed change. Before
+making a PR check mandatory, revisit path filters so skipped jobs cannot
+leave required checks pending, and protect the workflow, reference pins,
+and policy through repository review rules. Pilot verification trusts the
+workflow definition on `main`.
 
 ### Reports, recovery, and limitations
 
