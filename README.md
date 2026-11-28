@@ -101,6 +101,8 @@ The document, search, RAG, and conversation routes use a development workspace c
 
 ## Retrieval evaluation
 
+### Historical v0.2 benchmark
+
 The historical [v0.2 dataset](backend/evaluation/datasets/retrieval_benchmark.json) contains 12 queries across six categories and 30 distinct labelled chunk IDs from one paper on AI and the economy. Manually proposed relevance grades range from 0 to 3 and have yet to be independently adjudicated. The runner compares five configurations at a cutoff of five passages and records Precision@5, Recall@5, mean reciprocal rank (MRR), graded nDCG@5, and retrieval latency. These measure passage retrieval, with answer quality outside the benchmark's scope.
 
 | Configuration | Precision@5 | Recall@5 | MRR | nDCG@5 | Mean latency (ms) | Median latency (ms) | p95 latency (ms) |
@@ -114,6 +116,12 @@ The historical [v0.2 dataset](backend/evaluation/datasets/retrieval_benchmark.js
 On this run, hybrid improved all four ranking metrics over dense retrieval at similar mean latency. Reranking 20 candidates yielded the highest recall, while hybrid had the highest MRR and nDCG@5 and lower latency. These are preliminary results from one historical workspace. Its database-generated IDs and existing Qdrant vectors are required to reproduce the live run. [Recorded retrieval results](backend/evaluation/results/retrieval_benchmark_results.json)
 
 The offline regression checker validates report compatibility and checks all four quality metrics by configuration and query. It supports absolute drop tolerances and aggregate minimum scores. The default allows zero degradation. Exit status `0` means pass, `1` indicates a quality regression, and `2` indicates invalid input or incompatible reports. Latency is recorded separately from the quality gate. [Evaluation protocol](backend/evaluation/README.md)
+
+### Reviewed portable benchmark
+
+The [portable benchmark](backend/evaluation/portable_benchmark/README.md) covers eight synthetic documents, 40 canonical passages, 36 queries, and five retrieval profiles at top-k 5. One human reviewer verified the AI-assisted relevance judgments. The reviewed dataset contains 1,440 judgments, including 153 positive judgments and 41 resolved flagged alternatives.
+
+Four successful executions are recorded. The authoritative Windows baseline, a separately seeded Windows reproduction, and two GitHub-hosted Ubuntu pilot runs matched in all 180 ordered query-profile rankings. The Windows reports also matched ranking scores exactly. Minor cross-platform floating-point score differences were observed. Quality metrics measure passage retrieval on this small synthetic corpus. Latency varies with runtime and hardware, and answer accuracy is outside the evaluation. [Baseline](backend/evaluation/portable_benchmark/baselines/portable_quality_v1.json) · [Windows reproduction](backend/evaluation/portable_benchmark/baselines/portable_quality_v1_run2.json) · [Hosted results](backend/evaluation/portable_benchmark/README.md#hosted-pilot-results)
 
 ### BM25 performance
 
@@ -130,21 +138,25 @@ The forced-rebuild median was **about 40.2× the warm median** in this experimen
 
 ## Testing and CI
 
-At committed revision [`66f35cf`](https://github.com/AbinandBArjun/AURA/commit/66f35cf58c407ae06fb29ddd7a5ab769e166b77e), **396 backend tests passed**. All three GitHub Actions jobs were verified, including cold-cache model download and warm-cache restoration. The backend suite covers ingestion, retrieval and metrics, RAG, conversations, research graph and API behavior, and verified model preparation.
+At published revision [`297b2e5`](https://github.com/AbinandBArjun/AURA/commit/297b2e5ae6e39d71a7558163f609ebabfcba1bee), all three Core CI jobs and both portable quality jobs passed. Ubuntu Core CI selected 853 of 863 cases and reported **851 passed, 2 skipped, 10 deselected** in 105.88 seconds. The ten deselections belong to the separate backend integration selection. [Core CI run](https://github.com/AbinandBArjun/AURA/actions/runs/46116812375)
 
-| GitHub Actions job | Checks |
+| Core CI job | Checks |
 | --- | --- |
-| Backend core | Python 3.12 compilation and 386 service-independent pytest cases, including benchmark replay and the offline regression checker. Uses SQLite and test doubles. |
-| Backend integration | Python 3.12 and 10 pytest cases. Six use a live Qdrant 1.20.0 service pinned by image digest with fake embeddings and isolated test collections. Four exercise the real MiniLM model offline. |
-| Frontend build | Node.js 24, `npm ci`, TypeScript compilation, and Vite build. |
+| Backend core | Python 3.12 compilation and tests that use SQLite or test doubles for external services. Includes benchmark replay and both regression checkers. |
+| Backend integration | Six cases use a live digest-pinned Qdrant 1.20.0 instance with fake embeddings and isolated test collections. Four use the real MiniLM model offline. |
+| Frontend production build | Node.js 24, `npm ci`, TypeScript compilation, and Vite build. |
 
-The [workflow](.github/workflows/ci.yml) runs on Ubuntu 24.04 for pull requests to `main`, pushes to `main`, and manual runs. It runs the jobs independently, cancels superseded runs, and uses timeouts, SHA-pinned actions, read-only repository permissions, and checkout without persisted credentials. pip and npm downloads are cached using their dependency files. The integration job waits for Qdrant readiness and prints container logs on failure. CI requires no repository secrets, PostgreSQL, or Ollama. Live retrieval benchmarking and continuous deployment are outside the workflow.
+[Core CI](.github/workflows/ci.yml) runs on Ubuntu 24.04 for pull requests to `main`, pushes to `main`, and manual runs. Jobs cancel superseded runs and use timeouts, SHA-pinned actions, read-only repository permissions, and checkout without persisted credentials. Dependency files key the pip and npm caches.
+
+The [portable retrieval quality pilot](.github/workflows/portable-quality.yml) runs on relevant pushes to `main` and by manual dispatch from `main`. One job seeds isolated PostgreSQL and Qdrant services and produces a fresh report. A separate job uses a pinned trusted revision to validate the report and recompute the gate result against the authoritative baseline and policy. The pilot is non-required and has no pull request trigger. Both hosted runs passed all 20 blocking comparisons. The second restored both pinned model caches and verified their contents. [Pilot operation and results](backend/evaluation/portable_benchmark/README.md#hosted-portable-quality-pilot)
+
+The gate allows absolute drops of 0.020 for Precision@5, 0.030 for Recall@5, 0.020 for MRR@5, and 0.020 for nDCG@5, applied independently per profile with an epsilon of `1e-12`. A category nDCG@5 drop above 0.050 plus epsilon warns. Latency is reported without blocking the gate. [Policy and checker](backend/evaluation/portable_benchmark/README.md#compare-a-portable-quality-report)
 
 ### Model integrity and offline inference
 
 The integration [model manifest](backend/tests/embedding_model_manifest.json) pins MiniLM to upstream revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41` and specifies SHA-256 hashes for ten inference files, including the Safetensors weights. A cold run downloads only the required files into a temporary directory and publishes the model directory after validation. A warm run validates the restored files locally. The fixture verifies the prepared files again before loading the model for offline inference with remote model code disabled.
 
-The model cache key includes the runner OS, architecture, preparation script, and manifest. A bad cache fails with a diagnostic and leaves the files in place. GitHub Actions cache entries are immutable. Remove the affected entry and rerun to repopulate it. Local application inference uses the model IDs in the application code. The verified pin and offline fixture apply to integration tests.
+The model cache key includes the runner OS, architecture, preparation script, and manifest. A bad cache fails with a diagnostic and leaves the files in place. GitHub Actions cache entries are immutable. Remove the affected entry and rerun to repopulate it. Local application inference uses the model IDs in the application code. The portable workflow verifies the same embedding assets and separately pins and verifies the cross-encoder before offline inference.
 
 ## Security controls and current limits
 
@@ -270,6 +282,14 @@ python -m evaluation.run_bm25_optimized_performance
 
 Always supply `--output` for a new retrieval report so the tracked baseline is preserved. The original profiler, `python -m evaluation.run_bm25_performance`, writes to the tracked BM25 baseline path and belongs in a disposable copy when reproducing that profile. [Full evaluation commands and output formats](backend/evaluation/README.md)
 
+To verify the portable gate without starting benchmark services, compare the committed independent reproduction from `backend`.
+
+```bash
+python -m evaluation.portable_benchmark.check_quality_regression evaluation/portable_benchmark/baselines/portable_quality_v1_run2.json
+```
+
+For a fresh benchmark, follow the [disposable seed instructions](backend/evaluation/portable_benchmark/README.md#seed-a-disposable-benchmark-environment) and [model and runner instructions](backend/evaluation/portable_benchmark/README.md#run-portable-retrieval). For a hosted run, select **Actions → Portable retrieval quality pilot → Run workflow**, then select `main`.
+
 ## Repository guide
 
 ```text
@@ -298,6 +318,5 @@ For further detail, see the [evaluation guide](backend/evaluation/README.md), [A
 
 | Status | Scope |
 | --- | --- |
-| Completed | Milestones 1–16 and checkpoints 17.1–17.3, covering the application, retrieval evaluation, regression checks, and three-job CI. |
-| In progress | Checkpoint 17.4.2 is reviewed local work, pending commit and publication. It introduces a fictional portable corpus with eight documents, 40 logical passages, and 36 draft queries. Relevance judgments and portable benchmark scores are pending. Local verification of the pending changes recorded 429 passed tests and two environment-specific symbolic-link skips. |
-| Future work | Review relevance labels, add isolated benchmark seeding, and reproduce retrieval evaluation from a fresh workspace. Owner approval governs publication of the portable corpus. |
+| Implemented and verified | Milestones 1–17, covering the application, Core CI, reviewed portable retrieval evaluation, and the hosted quality pilot. |
+| Future work | Application Dockerization and the separate comprehensive application security audit. |

@@ -464,7 +464,7 @@ include equal-weight per-query averages overall and within categories.
 ### Portable quality baseline v1
 
 The [first validated run](baselines/portable_quality_v1.json) is the
-authoritative report for the proposed baseline. The
+authoritative Windows baseline report. The
 [complete second-run report](baselines/portable_quality_v1_run2.json) preserves
 the independent reproduction. The
 [run comparison](baselines/portable_quality_v1_reproducibility.json) records
@@ -718,11 +718,35 @@ query-level diagnostics. For an invalid candidate, inspect the declared
 failure phase and reproduce the comparison locally with the pinned trusted
 checkout and downloaded JSON. Never replace the baseline merely to clear a failure.
 
-The committed baseline measurements are from Windows. Ubuntu quality,
-duration, peak resource use, and cold/warm cache behavior require hosted
-pilot measurements. Latency differences are diagnostic. Report validation
-establishes consistency with the trusted judgments and policy. It does
-not establish how the candidate code obtained its rankings.
+#### Hosted pilot results
+
+At published revision `297b2e5ae6e39d71a7558163f609ebabfcba1bee`, the
+recorded GitHub summaries and artifacts show two successful Ubuntu 24.04
+quality runs.
+
+| Hosted run | Total workflow time | Generation | Verification |
+| --- | ---: | ---: | ---: |
+| [First pilot](https://github.com/AbinandBArjun/AURA/actions/runs/46116812387) | 5m 51s | 3m 48s | 1m 57s |
+| [Manual warm-cache pilot](https://github.com/AbinandBArjun/AURA/actions/runs/46117799806) | 5m 49s | 3m 45s | 1m 57s |
+
+Each run passed all 20 blocking comparisons and recorded 25 category
+comparisons. Both recorded zero blocking failures, category warnings,
+changed ordered rankings, and latency-summary warnings. The warm run
+restored both pinned model caches by their primary keys. Model and tokenizer
+preparation, including asset verification, took nine seconds.
+
+The authoritative Windows run, its independently seeded Windows reproduction,
+and the two Ubuntu candidates agreed on all 180 ordered logical rankings.
+The two committed Windows reports matched ranking scores exactly. Minor
+floating-point score differences occurred between Windows and Ubuntu. The
+retrieval-quality comparisons use the ordered passages and reviewed judgments.
+Latency remains diagnostic, and workflow duration includes setup and CI
+overhead. These observations establish agreement for the recorded runs on
+this synthetic corpus. They do not establish statistical significance,
+production generalization, or answer accuracy. The hosted records provide
+execution evidence. Report validation establishes consistency with the
+trusted judgments and policy and does not independently establish how the
+candidate code obtained its rankings.
 
 To update the trusted reference, review the proposed checker, policy,
 baseline, and benchmark inputs together, then explicitly update the workflow
